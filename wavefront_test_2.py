@@ -1,170 +1,213 @@
+"""
+Potential Field based path planner
+author: Atsushi Sakai (@Atsushi_twi)
+Ref:
+https://www.cs.cmu.edu/~motionplanning/lecture/Chap4-Potential-Field_howie.pdf
+"""
+
+from collections import deque
 import numpy as np
 import matplotlib.pyplot as plt
-import math
-from PIL import Image
+
+# Parameters
+KP = 5.0  # attractive potential gain
+ETA = 100.0  # repulsive potential gain
+AREA_WIDTH = 30.0  # potential area width [m]
+# the number of previous positions used to check oscillations
+OSCILLATIONS_DETECTION_LENGTH = 3
+
+show_animation = True
 
 
+def calc_potential_field(gx, gy, ox, oy, reso, rr, sx, sy):
+    minx = min(min(ox), sx, gx) - AREA_WIDTH / 2.0
+    miny = min(min(oy), sy, gy) - AREA_WIDTH / 2.0
+    maxx = max(max(ox), sx, gx) + AREA_WIDTH / 2.0
+    maxy = max(max(oy), sy, gy) + AREA_WIDTH / 2.0
+    xw = int(round((maxx - minx) / reso))
+    yw = int(round((maxy - miny) / reso))
 
-def get_obstacle_grid(GRIDSIZE=5, threshold=.125):
-    # Open image and convert to numpy array
-    image = Image.open('supermarket2.jpeg')
-    image = image.convert("1")
-    image_array = np.asarray(image)
-    image_array = np.abs(image_array-1)
-    
-    
-    # Create an empty obstacle grid
-    HEIGHT, WIDTH = np.shape(image_array)
-    obstacle_grid = np.zeros((HEIGHT // GRIDSIZE - 1, WIDTH // GRIDSIZE - 1))
-    
-    # If there is an obstacle in a cell of the grid, 
-    # mark the whole cell as an obstacle
-    for row in range(HEIGHT // GRIDSIZE - 1):
-        for col in range(WIDTH // GRIDSIZE - 1):
-            if (np.sum(image_array[row*GRIDSIZE : row*GRIDSIZE + GRIDSIZE, 
-                                    col*GRIDSIZE : col*GRIDSIZE + GRIDSIZE])
-                                    >= (threshold * GRIDSIZE * GRIDSIZE)):
-                obstacle_grid[row][col] = 1
-    
-    return obstacle_grid
+    # calc each potential
+    pmap = [[0.0 for i in range(yw)] for i in range(xw)]
 
+    for ix in range(xw):
+        x = ix * reso + minx
 
-def generate_wave(array, HEIGHT, WIDTH):
-    RUN = True
-    # Perform wave algorithm
-    while RUN:
-        # Loop over all cells and perform wave
-        RUN = False
-        for row in range(HEIGHT):
-            for col in range(WIDTH):
-                if array[row, col] == 0:
-    
-                    # Test up direction
-                    if row != 0:
-                        if array[row - 1, col] > 1:
-                            array[row, col] = array[row - 1, col] + 1
-                            RUN = True
-                       
-                    # Test down direction
-                    if row != HEIGHT - 1:
-                            if array[row + 1, col] > 1:
-                                array[row, col] = array[row + 1, col] + 1
-                                RUN = True
-                                
-                    # Test left direction
-                    if col != 0:
-                        if array[row, col - 1] > 1:
-                            array[row, col] = array[row, col - 1] + 1
-                            RUN = True
-                       
-                    # Test right direction
-                    if col != WIDTH - 1:
-                            if array[row, col + 1] > 1:
-                                array[row, col] = array[row, col + 1] + 1
-                                RUN = True    
+        for iy in range(yw):
+            y = iy * reso + miny
+            ug = calc_attractive_potential(x, y, gx, gy)
+            uo = calc_repulsive_potential(x, y, ox, oy, rr)
+            uf = ug + uo
+            pmap[ix][iy] = uf
 
-    return array
+    return pmap, minx, miny
 
 
-def generate_path(array, start, HEIGHT, WIDTH):
-    # Find optimal solution starting from start position:
-    lowest_value = math.inf
-    next_head = start
-    snake = []
-    
-    RUN = True
-    # Look around snake head for next lowest number
-    while RUN:
-        RUN = False
-        # Loop over all directions
-        
-        snake.append(next_head)
-        row, col = snake[-1]
+def calc_attractive_potential(x, y, gx, gy):
+    return 0.5 * KP * np.hypot(x - gx, y - gy)
 
-    
-        # Test up direction
-        if row != 0:
-            if array[row - 1, col] != 1:
-                if (array[row - 1, col] < lowest_value  
-                    and array[row - 1, col] < array[row, col]):
-                    lowest_value = array[row - 1, col]
-                    next_head = [row - 1, col]
-                    RUN = True
-        
-        # Test down direction
-        if row != HEIGHT - 1:
-            if array[row + 1, col] != 1:
-                if (array[row + 1, col] < lowest_value  
-                    and array[row + 1, col] < array[row, col]):
-                    lowest_value = array[row + 1, col]
-                    next_head = [row + 1, col]
-                    RUN = True
-                
-        # Test left direction
-        if col != 0:
-            if array[row - 1, col] != 1:
-                if (array[row, col - 1] < lowest_value  
-                    and array[row, col - 1] < array[row, col]):
-                    lowest_value = array[row - 1, col]
-                    next_head = [row, col - 1]
-                    RUN = True
-        
-        # Test right direction
-        if col != WIDTH - 1:
-            if array[row, col + 1] != 1:
-                if (array[row, col + 1] < lowest_value 
-                    and array[row, col + 1] < array[row, col]):
-                    lowest_value = array[row, col + 1]
-                    next_head = [row, col + 1]
-                    RUN = True
-        
-    return array, snake
-        
 
-def get_snake(start=[24, 17], end=[85, 117], diagonals=False):
-    # By default, the algorithm checks in 4 directions: left, right, up, and 
-    # down. If diagonals is set to True, the diagonals are also added.
-    directions = [[ 0,  1],
-                  [ 1,  0],
-                  [ 0, -1],
-                  [-1,  0]]
-    if diagonals==True:
-        directions.extend([[ 1,  1],
-                           [-1,  1],
-                           [ 1, -1],
-                           [-1, -1]])
-    
-    # Create an array containting all of the obstacles as ones, and free space 
-    # as zeros
-    array = get_obstacle_grid()
+def calc_repulsive_potential(x, y, ox, oy, rr):
+    # search nearest obstacle
+    minid = -1
+    dmin = float("inf")
+    for i, _ in enumerate(ox):
+        d = np.hypot(x - ox[i], y - oy[i])
+        if dmin >= d:
+            dmin = d
+            minid = i
 
-    # plt.imshow(array)
-    # plt.show()
-    
-    # Create empty array
-    HEIGHT, WIDTH = array.shape
-    
-    # Set start and end position
-    start = [24, 17]
-    array[85, 117] = 2
-    
-    array = generate_wave(array, HEIGHT, WIDTH)
-    
-    array, snake = generate_path(array, start, HEIGHT, WIDTH)
-    
-    for pos in snake:
-        array[pos[0], pos[1]] = np.inf
+    # calc repulsive potential
+    dq = np.hypot(x - ox[minid], y - oy[minid])
 
-    return snake, array
+    if dq <= rr:
+        if dq <= 0.1:
+            dq = 0.1
+
+        return 0.5 * ETA * (1.0 / dq - 1.0 / rr) ** 2
+    else:
+        return 0.0
+
+
+def get_motion_model():
+    # dx, dy
+    motion = [[1, 0],
+              [0, 1],
+              [-1, 0],
+              [0, -1],
+              [-1, -1],
+              [-1, 1],
+              [1, -1],
+              [1, 1]]
+
+    return motion
+
+
+def oscillations_detection(previous_ids, ix, iy):
+    previous_ids.append((ix, iy))
+
+    if (len(previous_ids) > OSCILLATIONS_DETECTION_LENGTH):
+        previous_ids.popleft()
+
+    # check if contains any duplicates by copying into a set
+    previous_ids_set = set()
+    for index in previous_ids:
+        if index in previous_ids_set:
+            return True
+        else:
+            previous_ids_set.add(index)
+    return False
+
+
+def potential_field_planning(sx, sy, gx, gy, ox, oy, reso, rr):
+
+    # calc potential field
+    pmap, minx, miny = calc_potential_field(gx, gy, ox, oy, reso, rr, sx, sy)
+
+    # search path
+    d = np.hypot(sx - gx, sy - gy)
+    ix = round((sx - minx) / reso)
+    iy = round((sy - miny) / reso)
+    gix = round((gx - minx) / reso)
+    giy = round((gy - miny) / reso)
+
+    if show_animation:
+        draw_heatmap(pmap)
+        # for stopping simulation with the esc key.
+        plt.gcf().canvas.mpl_connect('key_release_event',
+                lambda event: [exit(0) if event.key == 'escape' else None])
+        plt.plot(ix, iy, "*k")
+        plt.plot(gix, giy, "*m")
+
+    rx, ry = [sx], [sy]
+    motion = get_motion_model()
+    previous_ids = deque()
+
+    while d >= reso:
+        minp = float("inf")
+        minix, miniy = -1, -1
+        for i, _ in enumerate(motion):
+            inx = int(ix + motion[i][0])
+            iny = int(iy + motion[i][1])
+            if inx >= len(pmap) or iny >= len(pmap[0]) or inx < 0 or iny < 0:
+                p = float("inf")  # outside area
+                print("outside potential!")
+            else:
+                p = pmap[inx][iny]
+            if minp > p:
+                minp = p
+                minix = inx
+                miniy = iny
+        ix = minix
+        iy = miniy
+        xp = ix * reso + minx
+        yp = iy * reso + miny
+        d = np.hypot(gx - xp, gy - yp)
+        rx.append(xp)
+        ry.append(yp)
+
+        if (oscillations_detection(previous_ids, ix, iy)):
+            print("Oscillation detected at ({},{})!".format(ix, iy))
+            break
+
+        if show_animation:
+            plt.plot(ix, iy, ".r")
+            plt.pause(0.01)
+
+    print("Goal!!")
+
+    return rx, ry
+
+
+def draw_heatmap(data):
+    data = np.array(data).T
+    plt.pcolor(data, vmax=100.0, cmap=plt.cm.Greens)
 
 
 def main():
-    snake, array = get_snake(diagonals=True)
-    print(snake)
-    print(array)
+    print("potential_field_planning start")
+
+    sx = 0.0  # start x position [m]
+    sy = 10.0  # start y positon [m]
+    gx = 30.0  # goal x position [m]
+    gy = 30.0  # goal y position [m]
+    grid_size = 0.5  # potential grid size [m]
+    robot_radius = 5.0  # robot radius [m]
+
+    ox = []  # obstacle x position list [m]
+    oy = []  # obstacle y position list [m]
+
+    #ox.extend([15.0,  5.0, 20.0, 25.0, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+    #oy.extend([25.0, 15.0, 26.0, 25.0, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20])
     
-    # plt.imshow(array)
-    # plt.show()
+    # Add supermarket wall
+    ox.extend(np.arange(0, 15, .5))
+    oy.extend(np.ones(30)*13)
+    
+    # Add supermarket wall
+    ox.extend(np.arange(20, 35, .5))
+    oy.extend(np.ones(30)*13)
+    
+    # Add supermarket wall
+    ox.extend(np.arange(0, 15, .5))
+    oy.extend(np.ones(30)*20)
+    
+    # Add supermarket wall
+    ox.extend(np.arange(20, 35, .5))
+    oy.extend(np.ones(30)*20)
+    
+    
+
+    if show_animation:
+        plt.grid(True)
+        plt.axis("equal")
+
+    # path generation
+    _, _ = potential_field_planning(
+        sx, sy, gx, gy, ox, oy, grid_size, robot_radius)
+
+    if show_animation:
+        plt.show()
 
 
 if __name__ == '__main__':
