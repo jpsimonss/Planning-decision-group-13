@@ -524,6 +524,7 @@ def main():
     t, x, y, yaw, v, d, a = do_simulation(
         cx, cy, cyaw, ck, sp, dl, initial_state, array)
 
+
     if show_animation:  # pragma: no cover
         plt.close("all")
         plt.subplots()
