@@ -22,7 +22,7 @@ from wavefront_test_2 import get_snake
 
 NX = 4  # x = x, y, v, yaw
 NU = 2  # a = [accel, steer]
-T = 10  # horizon length
+T = 4  # horizon length
 
 # mpc parameters
 R = np.diag([0.01, 0.01])  # input cost matrix
@@ -365,7 +365,7 @@ def check_goal(state, goal, tind, nind):
     return False
 
 
-def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state):
+def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array):
     """
     Simulation
 
@@ -441,6 +441,7 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state):
             plt.plot(xref[0, :], xref[1, :], "xk", label="xref")
             plt.plot(cx[target_ind], cy[target_ind], "xg", label="target")
             plot_car(state.x, state.y, state.yaw, steer=di)
+            plt.imshow(array)
             plt.axis("equal")
             plt.grid(True)
             plt.title("Time[s]:" + str(round(time, 2))
@@ -507,6 +508,7 @@ def get_forward_course(dl, ax, ay):
 def main():
     print(__file__ + " start!!")
     snake, array = get_snake()
+    array = np.transpose(array)
     snake = np.array(snake)
     snake = snake.astype(float)
     dl = 1.0  # course tick
@@ -520,7 +522,7 @@ def main():
     initial_state = State(x=cx[0], y=cy[0], yaw=cyaw[0], v=0.0)
 
     t, x, y, yaw, v, d, a = do_simulation(
-        cx, cy, cyaw, ck, sp, dl, initial_state)
+        cx, cy, cyaw, ck, sp, dl, initial_state, array)
 
     if show_animation:  # pragma: no cover
         plt.close("all")
