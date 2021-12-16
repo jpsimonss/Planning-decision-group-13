@@ -133,7 +133,7 @@ def generate_path(array, start, HEIGHT, WIDTH, directions):
 
 def get_snake(start=[24, 17], end=[95, 117], diagonals=False, 
               show_obstacle_grid=False, show_wave=False, 
-              obstacle_gradient=True):
+              obstacle_gradient=False):
     # By default, the algorithm checks in 4 directions: left, right, up, and 
     # down. If diagonals is set to True, the diagonals are also added.
     directions = [[ 0,  1],
