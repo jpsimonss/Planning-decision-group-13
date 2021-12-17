@@ -10,7 +10,9 @@ import cvxpy
 import math
 import numpy as np
 import sys
-# import wavefront_test_2
+from numpy.lib.function_base import diff
+from numpy.ma.core import subtract
+import shapely.geometry as geom
 sys.path.append("CubicSpline/")
 
 try:
@@ -497,33 +499,55 @@ def smooth_yaw(yaw):
 
 
 def get_forward_course(dl, ax, ay):
-    # ax = [0.0, 60.0, 125.0, 50.0, 75.0, 30.0, -10.0]
-    # ay = [0.0, 0.0, 50.0, 65.0, 30.0, 50.0, -20.0]
     cx, cy, cyaw, ck, s = cubic_spline_planner.calc_spline_course(
         ax, ay, ds=dl)
 
     return cx, cy, cyaw, ck
 
+def spline_track_diff(x, y, x_point, y_point):
+    coords = np.transpose([x, y])
+    line = geom.LineString(coords)
+    point = geom.Point(x_point, y_point)
+    diff = point.distance(line)
+    
+    
+    return diff
+
+def find_all_diff(x, y, x_point, y_point):
+    differences = []
+    for i in range(np.size(x_point)):
+        diff = spline_track_diff(x, y, x_point[i], y_point[i])
+        differences = np.append(differences, diff)
+    
+    return differences
+
+
 
 def main():
     print(__file__ + " start!!")
-    snake, array = get_snake(diagonals=True, show_obstacle_grid=False,
-                             show_wave=False, obstacle_gradient=False)
+    snake, array = get_snake(start=[24, 17], end=[95, 117], diagonals=True, 
+              show_obstacle_grid=False, show_wave=False, 
+              obstacle_gradient=False)
     array = np.transpose(array)
     snake = np.array(snake)
     snake = snake.astype(float)
     dl = 1.0  # course tick
     ax = list(snake[:,0])
     ay = list(snake[:,1])
+    
 
     cx, cy, cyaw, ck = get_forward_course(dl, ax, ay)
-
     sp = calc_speed_profile(cx, cy, cyaw, TARGET_SPEED)
 
     initial_state = State(x=cx[0], y=cy[0], yaw=cyaw[0], v=0.0)
 
     t, x, y, yaw, v, d, a = do_simulation(
         cx, cy, cyaw, ck, sp, dl, initial_state, array)
+    
+    differences = find_all_diff(x, y, ax, ay)
+  
+    # print("differences", differences)
+    print("max difference", np.max(differences))
 
 
     if show_animation:  # pragma: no cover
@@ -542,6 +566,12 @@ def main():
         plt.grid(True)
         plt.xlabel("Time [s]")
         plt.ylabel("Speed [kmh]")
+
+        plt.subplots()
+        plt.plot(differences, label="difference")
+        plt.grid(True)
+        plt.xlabel("Spline path point")
+        plt.ylabel("shortest distance to path in meters")
 
         plt.show()
 
