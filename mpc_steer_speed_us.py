@@ -527,7 +527,7 @@ def main():
     print(__file__ + " start!!")
     snake, array = get_snake(start=[24, 17], end=[95, 117], diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
-              obstacle_gradient=False)
+              obstacle_gradient=True)
     array = np.transpose(array)
     snake = np.array(snake)
     snake = snake.astype(float)

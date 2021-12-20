@@ -71,26 +71,37 @@ def generate_wave(array, HEIGHT, WIDTH, directions):
 
     return array
 
-def add_obstacle_gradient(array, HEIGHT, WIDTH, directions, value_increase=1):
-    # Loop over all cells and check if the object is an obstacle (value = 1)
-    for row in range(HEIGHT):
-        for col in range(WIDTH):
-            if array[row, col] == 1:
-            # Loop over all possible directions
-                for direction in directions:
-                    # Check if not out of bounds and not an obstacle
-                    if (row + direction[0] >= 0 and 
-                        row + direction[0] <= HEIGHT - 1 and
-                        col + direction[1] >= 0 and 
-                        col + direction[1] <= WIDTH - 1 and
-                        array[row + direction[0], 
-                              col + direction[1]] != 1):
-                        # Add to the value
-                        array[row + direction[0], 
-                              col + direction[1]] += value_increase
-    
-    return array
 
+def get_obstacle_gradient(obstacle_grid, directions, size=1, value_increase=1):
+    # Loop over all cells and check if the object is an obstacle (value = 1)    
+    HEIGHT, WIDTH = np.shape(obstacle_grid)
+    
+    new_grid = np.zeros((HEIGHT, WIDTH))
+    obstacle_gradient = np.copy(obstacle_grid)
+    
+    while size != 0:
+        for row in range(HEIGHT):
+            for col in range(WIDTH):
+                if obstacle_gradient[row, col] == 1:
+                # Loop over all possible directions
+                    for direction in directions:
+                        # Check if not out of bounds and not an obstacle
+                        if (row + direction[0] >= 0 and 
+                            row + direction[0] <= HEIGHT - 1 and
+                            col + direction[1] >= 0 and 
+                            col + direction[1] <= WIDTH - 1 and
+                            obstacle_gradient[row + direction[0], 
+                                              col + direction[1]] != 1):
+                            # Add to the value
+                            new_grid[row + direction[0], 
+                                     col + direction[1]] += value_increase
+        
+        new_grid[new_grid!=0] = value_increase
+        obstacle_gradient += new_grid
+        size -= 1
+    
+    obstacle_gradient -= obstacle_grid
+    return obstacle_gradient
 
 def generate_path(array, start, HEIGHT, WIDTH, directions):
     # Find optimal solution starting from start position:
@@ -136,7 +147,7 @@ def generate_path(array, start, HEIGHT, WIDTH, directions):
 
 def get_snake(start=[24, 17], end=[113, 126], diagonals=False, 
               show_obstacle_grid=False, show_wave=False, 
-              obstacle_gradient=True):
+              obstacle_gradient=True, obstacle_gradient_size=2, obstacle_gradient_value_increase=1):
     # By default, the algorithm checks in 4 directions: left, right, up, and 
     # down. If diagonals is set to True, the diagonals are also added.
     directions = [[ 0,  1],
@@ -167,11 +178,11 @@ def get_snake(start=[24, 17], end=[113, 126], diagonals=False,
     
     
     # Create start-goal gradient
-    wave = generate_wave(obstacle_grid, HEIGHT, WIDTH, directions)
+    wave = generate_wave(np.copy(obstacle_grid), HEIGHT, WIDTH, directions)
     
     # Add gradient around obstacle if obstacle_gradient = True
     if obstacle_gradient == True:
-        wave = add_obstacle_gradient(wave, HEIGHT, WIDTH, directions, value_increase=1)
+        wave += get_obstacle_gradient(obstacle_grid, directions, size=obstacle_gradient_size, value_increase = obstacle_gradient_value_increase)
         
     if show_wave == True:
         plt.imshow(wave)
@@ -188,7 +199,7 @@ def get_snake(start=[24, 17], end=[113, 126], diagonals=False,
 
 def tests_for_guus(start=[0, 0], end=[9, 14], diagonals=False, 
               show_obstacle_grid=False, show_wave=False, 
-              obstacle_gradient=False):
+              obstacle_gradient=True):
     # By default, the algorithm checks in 4 directions: left, right, up, and 
     # down. If diagonals is set to True, the diagonals are also added.
     directions = [[ 0,  1],
@@ -208,9 +219,7 @@ def tests_for_guus(start=[0, 0], end=[9, 14], diagonals=False,
     if show_obstacle_grid==True:
         plt.imshow(obstacle_grid)
         plt.show()
-    
-    print(obstacle_grid)
-    
+        
     # Get the width and height of the obstacle grid.
     HEIGHT, WIDTH = obstacle_grid.shape
     
@@ -221,17 +230,19 @@ def tests_for_guus(start=[0, 0], end=[9, 14], diagonals=False,
     
     
     # Create start-goal gradient
-    wave = generate_wave(obstacle_grid, HEIGHT, WIDTH, directions)
+    wave = generate_wave(np.copy(obstacle_grid), HEIGHT, WIDTH, directions)
     
     # Add gradient around obstacle if obstacle_gradient = True
     if obstacle_gradient == True:
-        wave = add_obstacle_gradient(wave, HEIGHT, WIDTH, directions, value_increase=1)
+        wave += get_obstacle_gradient(obstacle_grid, directions, size=2)
+        
+    print(obstacle_grid)
+
         
     if show_wave == True:
         plt.imshow(wave)
         plt.show()
 
-    print(wave)
     # Generate path
     array, snake = generate_path(wave, start, HEIGHT, WIDTH, directions)
     
