@@ -24,7 +24,7 @@ from wavefront_test_2 import get_snake
 
 NX = 4  # x = x, y, v, yaw
 NU = 2  # a = [accel, steer]
-T = 4  # horizon length
+T = 8  # horizon length
 
 # mpc parameters
 R = np.diag([0.01, 0.01])  # input cost matrix
