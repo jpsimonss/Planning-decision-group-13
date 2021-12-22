@@ -18,7 +18,7 @@ def get_goal_input():
         "e": ["EGGS", [93, 32]],
         "f": ["FOIE GRAS", [125, 20]],
         "g": ["GUM", [73, 98]],
-        }
+        } #connies??
     
     #Print info text
     print("Please enter a new goal for the Supermarkt Robot: \n")
