@@ -82,7 +82,7 @@ def get_obstacle_gradient(obstacle_grid, directions, size=1, value_increase=1):
     while size != 0:
         for row in range(HEIGHT):
             for col in range(WIDTH):
-                if obstacle_gradient[row, col] == 1:
+                if obstacle_gradient[row, col] != 0:
                 # Loop over all possible directions
                     for direction in directions:
                         # Check if not out of bounds and not an obstacle
@@ -94,7 +94,7 @@ def get_obstacle_gradient(obstacle_grid, directions, size=1, value_increase=1):
                                               col + direction[1]] != 1):
                             # Add to the value
                             new_grid[row + direction[0], 
-                                     col + direction[1]] += value_increase
+                                     col + direction[1]] += 1
         
         new_grid[new_grid!=0] = value_increase
         obstacle_gradient += new_grid
@@ -145,9 +145,9 @@ def generate_path(array, start, HEIGHT, WIDTH, directions):
     return array, snake
         
 
-def get_snake(start=[24, 17], end=[113, 126], diagonals=False, 
+def get_snake(start=[24, 17], end=[113, 126], diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
-              obstacle_gradient=True, obstacle_gradient_size=2, obstacle_gradient_value_increase=1):
+              obstacle_gradient=True, obstacle_gradient_size=2, obstacle_gradient_value_increase=2):
     # By default, the algorithm checks in 4 directions: left, right, up, and 
     # down. If diagonals is set to True, the diagonals are also added.
     directions = [[ 0,  1],
