@@ -21,6 +21,7 @@ except:
     raise
 
 from wavefront_test_2 import get_snake
+from get_goal_input import get_goal_input
 
 NX = 4  # x = x, y, v, yaw
 NU = 2  # a = [accel, steer]
@@ -525,11 +526,10 @@ def find_all_diff(x, y, x_point, y_point):
 
 def main():
     print(__file__ + " start!!")
-    # snake, array = get_snake(start=[24, 17], end=[95, 117], diagonals=True, 
-    #           show_obstacle_grid=False, show_wave=False, 
-    #           obstacle_gradient=True)
 
-    snake, array = get_snake(start=[24, 17], end=[95, 117], diagonals=True, 
+    # goal_coordinates = get_goal_input()
+
+    snake, array = get_snake(start=[24, 17], end=get_goal_input(), diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
               obstacle_gradient=True, obstacle_gradient_size=1, obstacle_gradient_value_increase=2)
     array = np.transpose(array)
@@ -550,7 +550,6 @@ def main():
     
     differences = find_all_diff(x, y, ax, ay)
   
-    # print("differences", differences)
     print("max difference", np.max(differences))
 
 
