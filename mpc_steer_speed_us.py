@@ -111,7 +111,7 @@ def get_linear_model_matrix(v, phi, delta):
     return A, B, C
 
 
-def plot_car(x, y, yaw, steer=0.0, cabcolor="-r", truckcolor="-k"):  # pragma: no cover
+def plot_car(x, y, yaw, axes, steer=0.0, cabcolor="-r", truckcolor="-k"):  # pragma: no cover
 
     outline = np.array([[-BACKTOWHEEL, (LENGTH - BACKTOWHEEL), (LENGTH - BACKTOWHEEL), -BACKTOWHEEL, -BACKTOWHEEL],
                         [WIDTH / 2, WIDTH / 2, - WIDTH / 2, -WIDTH / 2, WIDTH / 2]])
@@ -154,17 +154,17 @@ def plot_car(x, y, yaw, steer=0.0, cabcolor="-r", truckcolor="-k"):  # pragma: n
     rl_wheel[0, :] += x
     rl_wheel[1, :] += y
 
-    plt.plot(np.array(outline[0, :]).flatten(),
+    axes.plot(np.array(outline[0, :]).flatten(),
              np.array(outline[1, :]).flatten(), truckcolor)
-    plt.plot(np.array(fr_wheel[0, :]).flatten(),
+    axes.plot(np.array(fr_wheel[0, :]).flatten(),
              np.array(fr_wheel[1, :]).flatten(), truckcolor)
-    plt.plot(np.array(rr_wheel[0, :]).flatten(),
+    axes.plot(np.array(rr_wheel[0, :]).flatten(),
              np.array(rr_wheel[1, :]).flatten(), truckcolor)
-    plt.plot(np.array(fl_wheel[0, :]).flatten(),
+    axes.plot(np.array(fl_wheel[0, :]).flatten(),
              np.array(fl_wheel[1, :]).flatten(), truckcolor)
-    plt.plot(np.array(rl_wheel[0, :]).flatten(),
+    axes.plot(np.array(rl_wheel[0, :]).flatten(),
              np.array(rl_wheel[1, :]).flatten(), truckcolor)
-    plt.plot(x, y, "*")
+    axes.plot(x, y, "*")
 
 
 def update_state(state, a, delta):
@@ -368,7 +368,7 @@ def check_goal(state, goal, tind, nind):
     return False
 
 
-def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array):
+def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2):
     """
     Simulation
 
@@ -433,23 +433,45 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array):
             break
 
         if show_animation:  # pragma: no cover
-            plt.cla()
             # for stopping simulation with the esc key.
             plt.gcf().canvas.mpl_connect('key_release_event',
-                    lambda event: [exit(0) if event.key == 'escape' else None])
+            lambda event: [exit(0) if event.key == 'escape' else None])    
+        
+            # large plot
+            ax1.cla()
             if ox is not None:
-                plt.plot(ox, oy, "xr", label="MPC")
-            plt.plot(cx, cy, "-r", label="course")
-            plt.plot(x, y, "ob", label="trajectory")
-            plt.plot(xref[0, :], xref[1, :], "xk", label="xref")
-            plt.plot(cx[target_ind], cy[target_ind], "xg", label="target")
-            plot_car(state.x, state.y, state.yaw, steer=di)
-            plt.imshow(array)
-            plt.axis("equal")
-            plt.grid(True)
-            plt.title("Time[s]:" + str(round(time, 2))
+                ax1.plot(ox, oy, "xr", label="MPC")
+            ax1.plot(cx, cy, "-r", label="course")
+            ax1.plot(x, y, "ob", label="trajectory")
+            ax1.plot(xref[0, :], xref[1, :], "xk", label="xref")
+            ax1.plot(cx[target_ind], cy[target_ind], "xg", label="target")
+            plot_car(state.x, state.y, state.yaw, axes=ax1, steer=di)
+            ax1.imshow(array)
+            ax1.axis("equal")
+            #ax1.grid(True)
+            
+            
+            # small plot
+            ax2.cla()
+            if ox is not None:
+                ax2.plot(ox, oy, "xr", label="MPC")
+            ax2.plot(cx, cy, "-r", label="course")
+            ax2.plot(x, y, "ob", label="trajectory")
+            ax2.plot(xref[0, :], xref[1, :], "xk", label="xref")
+            ax2.plot(cx[target_ind], cy[target_ind], "xg", label="target")
+            plot_car(state.x, state.y, state.yaw, axes=ax2, steer=di)
+            ax2.imshow(array)
+            ax2.axis([state.x-15, state.x+15, 
+                      state.y+15, state.y-15])
+            ax2.grid(True)
+            
+            
+            # general
+            fig.suptitle("Time[s]:" + str(round(time, 2))
                       + ", speed[km/h]:" + str(round(state.v * 3.6, 2)))
             plt.pause(0.0001)
+            
+
 
     return t, x, y, yaw, v, d, a
 
@@ -548,9 +570,11 @@ def main():
     
     initial_state = State(x=cx[0], y=cy[0], yaw=cyaw[0], v=0.0)
 
-
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    fig.set_size_inches(16, 8)
+            
     t, x, y, yaw, v, d, a = do_simulation(
-        cx, cy, cyaw, ck, sp, dl, initial_state, array)
+        cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2)
     
 
 
