@@ -523,11 +523,15 @@ def find_all_diff(x, y, x_point, y_point):
     return differences
 
 
-
 def main():
     print(__file__ + " start!!")
+    
+    # start_end = np.append(start_end, [get_goal_input()])
+    # print(start_end)
 
-    # goal_coordinates = get_goal_input()
+    # snake, array = get_snake(start=[start_end[-4], start_end[-3]], end=[start_end[-2], start_end[-1]], diagonals=True, 
+    #           show_obstacle_grid=False, show_wave=False, 
+    #           obstacle_gradient=True, obstacle_gradient_size=1, obstacle_gradient_value_increase=2)
 
     snake, array = get_snake(start=[24, 17], end=get_goal_input(), configuration_size=1)
     array = np.transpose(array)
@@ -541,11 +545,15 @@ def main():
     cx, cy, cyaw, ck = get_forward_course(dl, ax, ay)
     sp = calc_speed_profile(cx, cy, cyaw, TARGET_SPEED)
 
+    
     initial_state = State(x=cx[0], y=cy[0], yaw=cyaw[0], v=0.0)
+
 
     t, x, y, yaw, v, d, a = do_simulation(
         cx, cy, cyaw, ck, sp, dl, initial_state, array)
     
+
+
     differences = find_all_diff(x, y, ax, ay)
   
     print("max difference", np.max(differences))
@@ -576,6 +584,10 @@ def main():
 
         plt.show()
 
+while True:
+    main()
+    if input("Repeat the program? (Y/N)").strip().upper() != 'Y':
+        break
 
 
 if __name__ == '__main__':
