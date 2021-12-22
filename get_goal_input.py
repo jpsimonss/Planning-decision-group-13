@@ -11,13 +11,13 @@ def get_goal_input():
     
     #Stack dictionary with locations
     locations = {
-        "a": ["APPLES", [100, 12]],
+        "a": ["APPLES", [100, 10]],
         "b": ["BREAD", [10, 65]],
         "c": ["CHECKOUT", [114, 73]],
         "d": ["DRY YEAST", [76, 116]],
         "e": ["EGGS", [93, 53]],
-        "f": ["FOIE GRAS", [55, 93]],
-        "g": ["GUM", [92, 125]],
+        "f": ["FOIE GRAS", [55, 94]],
+        "g": ["GUM", [92, 124]],
         }
     
     #Print info text

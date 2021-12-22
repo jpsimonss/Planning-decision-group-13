@@ -529,9 +529,7 @@ def main():
 
     # goal_coordinates = get_goal_input()
 
-    snake, array = get_snake(start=[24, 17], end=get_goal_input(), diagonals=True, 
-              show_obstacle_grid=False, show_wave=False, 
-              obstacle_gradient=True, obstacle_gradient_size=1, obstacle_gradient_value_increase=2)
+    snake, array = get_snake(start=[24, 17], end=get_goal_input(), configuration_size=1)
     array = np.transpose(array)
     snake = np.array(snake)
     snake = snake.astype(float)
