@@ -97,8 +97,23 @@ def make_configuration_space(obstacle_grid, directions, size=1):
         new_grid[new_grid!=0] = 1
         configuration_space += new_grid
         size -= 1
-    
+    print(configuration_space)
     return configuration_space
+
+def random_start_end(configuration_space):
+    i = 0
+    while i < 2:
+        randomRow = np.random.randint(configuration_space.shape[0], size=1)
+        randomColumn = np.random.randint(configuration_space.shape[1], size=1)
+        if configuration_space[randomRow, randomColumn] == 0:
+            if i == 0:
+                start = [randomRow[0], randomColumn[0]]
+                i = i+1
+            elif i == 1:
+                end = [randomRow[0], randomColumn[0]]
+                i = i+1
+    print(start, end)
+    return start, end
 
 # def get_obstacle_gradient(obstacle_grid, directions, size=1, value_increase=1):
 #     # Loop over all cells and check if the object is an obstacle (value = 1)    
@@ -179,7 +194,7 @@ def generate_path(array, start, end, directions):
     return array, snake, local_min
         
 
-def get_snake(start=[24, 17], end=[73, 102], diagonals=True, 
+def get_snake(diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
               show_configuration_space = False, configuration_size=1):
     # By default, the algorithm checks in 4 directions: left, right, up, and 
@@ -205,12 +220,15 @@ def get_snake(start=[24, 17], end=[73, 102], diagonals=True,
     # Get the width and height of the obstacle grid.
     HEIGHT, WIDTH = obstacle_grid.shape
     
-    # Set start and end position
-    start = start
-    obstacle_grid[end[0]][end[1]] = 2
+   
+
         
     configuration_space = make_configuration_space(np.copy(obstacle_grid), directions, size=configuration_size)
     
+    # Set start and end position
+    start, end = random_start_end(configuration_space)
+    obstacle_grid[end[0]][end[1]] = 2
+
     if show_configuration_space==True:
         plt.imshow(configuration_space)
         plt.show()
@@ -294,7 +312,7 @@ def main():
     # print(array)
 
     
-    snake, array = get_snake(start=[24, 17], end=[92, 124], diagonals=True, 
+    snake, array = get_snake(diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
               show_configuration_space=False, configuration_size=1)
     
