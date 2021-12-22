@@ -11,13 +11,13 @@ def get_goal_input():
     
     #Stack dictionary with locations
     locations = {
-        "a": ["APPLES", [12, 100]],
-        "b": ["BREAD", [19, 5.5]],
-        "c": ["CHECKOUT", [95, 114]],
-        "d": ["DRY YEAST", [40, 30]],
-        "e": ["EGGS", [93, 32]],
-        "f": ["FOIE GRAS", [125, 20]],
-        "g": ["GUM", [73, 98]],
+        "a": ["APPLES", [100, 12]],
+        "b": ["BREAD", [10, 65]],
+        "c": ["CHECKOUT", [114, 73]],
+        "d": ["DRY YEAST", [76, 116]],
+        "e": ["EGGS", [93, 53]],
+        "f": ["FOIE GRAS", [55, 93]],
+        "g": ["GUM", [92, 125]],
         }
     
     #Print info text
@@ -38,4 +38,4 @@ def get_goal_input():
     
     return goal_coordinates
 
-get_goal_input()
+# get_goal_input()
