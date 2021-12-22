@@ -8,9 +8,9 @@ def simple_obstacle_grid(GRIDSIZE=0, threshold=0):
     obstacle_grid[4:8, 6:10] = 1
     return obstacle_grid
 
-def get_obstacle_grid(GRIDSIZE=5, threshold=.125):
+def get_obstacle_grid(GRIDSIZE=5, threshold=.01):
     # Open image and convert to numpy array
-    image = Image.open('supermarket2.jpeg')
+    image = Image.open('supermarket3.jpeg')
     image = image.convert("1")
     image_array = np.asarray(image)
     image_array = np.abs(image_array-1)
