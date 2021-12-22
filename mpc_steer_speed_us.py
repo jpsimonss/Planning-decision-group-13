@@ -33,33 +33,34 @@ R = np.diag([0.01, 0.01])  # input cost matrix
 Rd = np.diag([0.01, 1.0])  # input difference cost matrix
 Q = np.diag([1.0, 1.0, 0.5, 0.5])  # state cost matrix
 Qf = Q  # state final matrix
-GOAL_DIS = 0.3 # goal distance
-STOP_SPEED = 0.1 / 3.6  # stop speed
+GOAL_DIS = scaling * 0.3 # goal distance
+STOP_SPEED = scaling * 0.1 / 3.6  # stop speed
 MAX_TIME = 500.0  # max simulation time
 
 # iterative paramter
 MAX_ITER = 3  # Max iteration
 DU_TH = 0.1  # iteration finish param
 
-TARGET_SPEED = 10.0 / 3.6  # [m/s] target speed
+TARGET_SPEED = scaling * 10.0 / 3.6  # [m/s] target speed
 N_IND_SEARCH = 10  # Search index number
 
 DT = 0.2  # [s] time tick
 
+scaling_car = 1
 # Vehicle parameters
-LENGTH = 4.5  # [m]
-WIDTH = 2.0  # [m]
-BACKTOWHEEL = 1.0  # [m]
-WHEEL_LEN = 0.3  # [m]
-WHEEL_WIDTH = 0.2  # [m]
-TREAD = 0.7  # [m]
-WB = 2.5  # [m]
+LENGTH = scaling_car * 3.0  # [m]
+WIDTH = scaling_car * 2.0  # [m]
+BACKTOWHEEL = scaling_car * 0.5  # [m]
+WHEEL_LEN = scaling_car * 0.3  # [m]
+WHEEL_WIDTH = scaling_car * 0.2  # [m]
+TREAD = scaling_car * 0.7  # [m]
+WB = scaling_car * 2.0  # [m]
 
 MAX_STEER = np.deg2rad(45.0)  # maximum steering angle [rad]
 MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
-MAX_SPEED = 5.0 / 3.6  # maximum speed [m/s]
-MIN_SPEED = -2.0 / 3.6  # minimum speed [m/s]
-MAX_ACCEL = 1.0  # maximum accel [m/ss]
+MAX_SPEED = scaling * 5.0 / 3.6  # maximum speed [m/s]
+MIN_SPEED = scaling * -2.0 / 3.6  # minimum speed [m/s]
+MAX_ACCEL = scaling * 1.0  # maximum accel [m/ss]
 
 show_animation = True
 
@@ -469,7 +470,7 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2)
             
             # general
             fig.suptitle("Time[s]:" + str(round(time, 2))
-                      + ", speed[km/h]:" + str(round(state.v * 3.6, 2)))
+                      + ", speed[km/h]:" + str(round(state.v * 3.6 / scaling, 2)))
             plt.pause(0.0001)
             
 
@@ -532,7 +533,7 @@ def spline_track_diff(x, y, x_point, y_point):
     coords = np.transpose([x, y])
     line = geom.LineString(coords)
     point = geom.Point(x_point, y_point)
-    diff = point.distance(line)
+    diff = point.distance(line)/scaling
     
     
     return diff
