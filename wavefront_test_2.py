@@ -97,7 +97,6 @@ def make_configuration_space(obstacle_grid, directions, size=1):
         new_grid[new_grid!=0] = 1
         configuration_space += new_grid
         size -= 1
-    print(configuration_space)
     return configuration_space
 
 def random_start_end(configuration_space):
@@ -112,7 +111,6 @@ def random_start_end(configuration_space):
             elif i == 1:
                 end = [randomRow[0], randomColumn[0]]
                 i = i+1
-    print(start, end)
     return start, end
 
 # def get_obstacle_gradient(obstacle_grid, directions, size=1, value_increase=1):
@@ -227,7 +225,7 @@ def get_snake(diagonals=True,
     
     # Set start and end position
     start, end = random_start_end(configuration_space)
-    obstacle_grid[end[0]][end[1]] = 2
+    configuration_space[end[0]][end[1]] = 2
 
     if show_configuration_space==True:
         plt.imshow(configuration_space)
@@ -313,11 +311,11 @@ def main():
 
     
     snake, array = get_snake(diagonals=True, 
-              show_obstacle_grid=False, show_wave=False, 
+              show_obstacle_grid=False, show_wave=True, 
               show_configuration_space=False, configuration_size=1)
     
-    plt.imshow(array)
-    plt.show()
+    # plt.imshow(array)
+    # plt.show()
 
 
 if __name__ == '__main__':

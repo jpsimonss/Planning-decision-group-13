@@ -21,7 +21,8 @@ except:
     raise
 
 from wavefront_test_2 import get_snake
-from get_goal_input import get_goal_input
+
+scaling = 4 #scaling factor for plausible dimensions
 
 NX = 4  # x = x, y, v, yaw
 NU = 2  # a = [accel, steer]
@@ -32,8 +33,8 @@ R = np.diag([0.01, 0.01])  # input cost matrix
 Rd = np.diag([0.01, 1.0])  # input difference cost matrix
 Q = np.diag([1.0, 1.0, 0.5, 0.5])  # state cost matrix
 Qf = Q  # state final matrix
-GOAL_DIS = 1.5  # goal distance
-STOP_SPEED = 0.5 / 3.6  # stop speed
+GOAL_DIS = 0.3 # goal distance
+STOP_SPEED = 0.1 / 3.6  # stop speed
 MAX_TIME = 500.0  # max simulation time
 
 # iterative paramter
@@ -56,8 +57,8 @@ WB = 2.5  # [m]
 
 MAX_STEER = np.deg2rad(45.0)  # maximum steering angle [rad]
 MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
-MAX_SPEED = 55.0 / 3.6  # maximum speed [m/s]
-MIN_SPEED = -20.0 / 3.6  # minimum speed [m/s]
+MAX_SPEED = 5.0 / 3.6  # maximum speed [m/s]
+MIN_SPEED = -2.0 / 3.6  # minimum speed [m/s]
 MAX_ACCEL = 1.0  # maximum accel [m/ss]
 
 show_animation = True
@@ -548,14 +549,7 @@ def find_all_diff(x, y, x_point, y_point):
 def main():
     print(__file__ + " start!!")
     
-    # start_end = np.append(start_end, [get_goal_input()])
-    # print(start_end)
-
-    # snake, array = get_snake(start=[start_end[-4], start_end[-3]], end=[start_end[-2], start_end[-1]], diagonals=True, 
-    #           show_obstacle_grid=False, show_wave=False, 
-    #           obstacle_gradient=True, obstacle_gradient_size=1, obstacle_gradient_value_increase=2)
-
-    snake, array = get_snake(start=[24, 17], end=get_goal_input(), configuration_size=1)
+    snake, array = get_snake(configuration_size=1)
     array = np.transpose(array)
     snake = np.array(snake)
     snake = snake.astype(float)
@@ -608,10 +602,6 @@ def main():
 
         plt.show()
 
-while True:
-    main()
-    if input("Repeat the program? (Y/N)").strip().upper() != 'Y':
-        break
 
 
 if __name__ == '__main__':
