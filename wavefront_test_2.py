@@ -8,7 +8,7 @@ def simple_obstacle_grid(GRIDSIZE=0, threshold=0):
     obstacle_grid[4:8, 6:10] = 1
     return obstacle_grid
 
-def get_obstacle_grid(GRIDSIZE=5, threshold=.01):
+def get_obstacle_grid(GRIDSIZE=5, threshold=.1):
     # Open image and convert to numpy array
     image = Image.open('supermarket3.jpeg')
     image = image.convert("1")
@@ -71,6 +71,10 @@ def generate_wave(array, HEIGHT, WIDTH, directions):
 
     return array
 
+def make_config_space(obstacle_grid, directions, size=1):
+    pass
+    
+
 
 def get_obstacle_gradient(obstacle_grid, directions, size=1, value_increase=1):
     # Loop over all cells and check if the object is an obstacle (value = 1)    
@@ -103,9 +107,11 @@ def get_obstacle_gradient(obstacle_grid, directions, size=1, value_increase=1):
     obstacle_gradient -= obstacle_grid
     return obstacle_gradient
 
-def generate_path(array, start, HEIGHT, WIDTH, directions):
-    # Find optimal solution starting from start position:
+def generate_path(array, start, end, directions):
+    HEIGHT, WIDTH = np.shape(array)
     
+    # Find optimal solution starting from start position:
+        
     # Set the next head to check to be the start position
     next_head = start
     snake = []
@@ -123,13 +129,14 @@ def generate_path(array, start, HEIGHT, WIDTH, directions):
         # Loop over all possible directions and check if a 
         for direction in directions:
             # Check if not out of bounds, not an obstacle and not already
-            # in snake
+            # in snake and not the end position
             if (row + direction[0] >= 0 and 
                 row + direction[0] <= HEIGHT - 1 and
                 col + direction[1] >= 0 and 
                 col + direction[1] <= WIDTH - 1 and 
                 array[row + direction[0], col + direction[1]] != 1 and
-                [row + direction[0], col + direction[1]] not in snake):
+                [row + direction[0], col + direction[1]] not in snake and
+                [row, col] != end):
                 # Check if the value of the neighbor has a lower value than
                 # the current lowest value.
                 if (array[row + direction[0], 
@@ -141,13 +148,16 @@ def generate_path(array, start, HEIGHT, WIDTH, directions):
                     next_head = [row + direction[0], 
                                   col + direction[1]]
                     RUN = True
-
-    return array, snake
+    
+    local_min = False
+    if snake[-1] != end:
+        local_min = True
+    return array, snake, local_min
         
 
-def get_snake(start=[24, 17], end=[113, 126], diagonals=True, 
+def get_snake(start=[24, 17], end=[73, 102], diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
-              obstacle_gradient=True, obstacle_gradient_size=2, obstacle_gradient_value_increase=2):
+              obstacle_gradient=True, obstacle_gradient_size=1, obstacle_gradient_value_increase=2):
     # By default, the algorithm checks in 4 directions: left, right, up, and 
     # down. If diagonals is set to True, the diagonals are also added.
     directions = [[ 0,  1],
@@ -175,27 +185,26 @@ def get_snake(start=[24, 17], end=[113, 126], diagonals=True,
     start = start
     obstacle_grid[end[0]][end[1]] = 2
         
-    
-    
     # Create start-goal gradient
     wave = generate_wave(np.copy(obstacle_grid), HEIGHT, WIDTH, directions)
+    new_wave = np.copy(wave)
     
     # Add gradient around obstacle if obstacle_gradient = True
     if obstacle_gradient == True:
-        wave += get_obstacle_gradient(obstacle_grid, directions, size=obstacle_gradient_size, value_increase = obstacle_gradient_value_increase)
+        new_wave += get_obstacle_gradient(obstacle_grid, directions, size=obstacle_gradient_size, value_increase = obstacle_gradient_value_increase)
         
     if show_wave == True:
-        plt.imshow(wave)
+        plt.imshow(new_wave)
         plt.show()
 
     
     # Generate path
-    array, snake = generate_path(wave, start, HEIGHT, WIDTH, directions)
+    array, snake, local_min = generate_path(new_wave, start, end, directions)
     
     for pos in snake:
-        array[pos[0], pos[1]] = np.inf
+        obstacle_grid[pos[0], pos[1]] = np.inf
 
-    return snake, array
+    return snake, obstacle_grid
 
 def tests_for_guus(start=[0, 0], end=[9, 14], diagonals=False, 
               show_obstacle_grid=False, show_wave=False, 
@@ -244,7 +253,7 @@ def tests_for_guus(start=[0, 0], end=[9, 14], diagonals=False,
         plt.show()
 
     # Generate path
-    array, snake = generate_path(wave, start, HEIGHT, WIDTH, directions)
+    array, snake = generate_path(wave, start, end, directions)
     
     for pos in snake:
         array[pos[0], pos[1]] = np.inf
@@ -258,7 +267,7 @@ def main():
     # print(array)
 
     
-    snake, array = get_snake(diagonals=True, show_obstacle_grid=False,
+    snake, array = get_snake(start=[48, 24], end=[73, 102], diagonals=True, obstacle_gradient_size=1, show_obstacle_grid=False,
                               show_wave=False, obstacle_gradient=True)
     
     plt.imshow(array)
