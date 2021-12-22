@@ -528,6 +528,10 @@ def main():
     snake, array = get_snake(start=[24, 17], end=[95, 117], diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
               obstacle_gradient=True)
+
+    # snake, array = get_snake(start=[24, 17], end=[95, 117], diagonals=True, 
+    #           show_obstacle_grid=False, show_wave=False, 
+    #           obstacle_gradient=True, obstacle_gradient_size=2, obstacle_gradient_value_increase=1)
     array = np.transpose(array)
     snake = np.array(snake)
     snake = snake.astype(float)
