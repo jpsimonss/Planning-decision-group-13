@@ -209,7 +209,7 @@ def get_snake(start=[24, 17], end=[73, 102], diagonals=True,
     start = start
     obstacle_grid[end[0]][end[1]] = 2
         
-    configuration_space = make_configuration_space(obstacle_grid, directions, size=configuration_size)
+    configuration_space = make_configuration_space(np.copy(obstacle_grid), directions, size=configuration_size)
     
     if show_configuration_space==True:
         plt.imshow(configuration_space)
@@ -296,10 +296,10 @@ def main():
     
     snake, array = get_snake(start=[24, 17], end=[92, 124], diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
-              show_configuration_space=True, configuration_size=1)
+              show_configuration_space=False, configuration_size=1)
     
-    # plt.imshow(array)
-    # plt.show()
+    plt.imshow(array)
+    plt.show()
 
 
 if __name__ == '__main__':
