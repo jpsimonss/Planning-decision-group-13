@@ -14,7 +14,8 @@ def get_obstacle_grid(GRIDSIZE=3, threshold=.01):
     # image = Image.open('supermarket3.jpeg')             # Real supermarket
     # image = Image.open('supermarkets/straight.jpg')     # Test with straight shelves
     # image = Image.open('supermarkets/rotated.jpg')      # Test with rotated shelves
-    image = Image.open('supermarkets/circles.jpg')      # Test with oval shapes
+    # image = Image.open('supermarkets/circles.jpg')      # Test with oval shapes
+    image = Image.open('supermarkets/convex.jpg')      # Test with convex star shapes
     # image = Image.open('supermarkets/doolhof.jpg')      # Test with maze
 
     image = image.convert("1")
