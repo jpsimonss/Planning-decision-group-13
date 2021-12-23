@@ -550,7 +550,7 @@ def find_all_diff(x, y, x_point, y_point):
 def main():
     print(__file__ + " start!!")
     
-    snake, array = get_snake(configuration_size=1)
+    snake, array = get_snake(configuration_size=2)
     array = np.transpose(array)
     snake = np.array(snake)
     snake = snake.astype(float)
