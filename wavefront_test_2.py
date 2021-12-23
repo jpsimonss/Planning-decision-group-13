@@ -8,7 +8,7 @@ def simple_obstacle_grid(GRIDSIZE=0, threshold=0):
     obstacle_grid[4:8, 6:10] = 1
     return obstacle_grid
 
-def get_obstacle_grid(GRIDSIZE=5, threshold=.01):
+def get_obstacle_grid(GRIDSIZE=3, threshold=.01):
     # Open image and convert to numpy array
     image = Image.open('supermarket3.jpeg')
     image = image.convert("1")
@@ -28,7 +28,7 @@ def get_obstacle_grid(GRIDSIZE=5, threshold=.01):
                                     col*GRIDSIZE : col*GRIDSIZE + GRIDSIZE])
                                     >= (threshold * GRIDSIZE * GRIDSIZE)):
                 obstacle_grid[row][col] = 1
-    
+    print(np.shape(obstacle_grid))
     return obstacle_grid
 
 
@@ -193,7 +193,7 @@ def generate_path(array, start, end, directions):
 
 def get_snake(diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
-              show_configuration_space = False, configuration_size=1):
+              show_configuration_space = False, configuration_size=2):
     # By default, the algorithm checks in 4 directions: left, right, up, and 
     # down. If diagonals is set to True, the diagonals are also added.
     directions = [[ 0,  1],
