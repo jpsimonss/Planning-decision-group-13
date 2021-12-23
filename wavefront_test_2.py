@@ -10,7 +10,13 @@ def simple_obstacle_grid(GRIDSIZE=0, threshold=0):
 
 def get_obstacle_grid(GRIDSIZE=3, threshold=.01):
     # Open image and convert to numpy array
-    image = Image.open('supermarket3.jpeg')
+        ### SELECT ONE ###
+    # image = Image.open('supermarket3.jpeg')             # Real supermarket
+    # image = Image.open('supermarkets/straight.jpg')     # Test with straight shelves
+    # image = Image.open('supermarkets/rotated.jpg')      # Test with rotated shelves
+    image = Image.open('supermarkets/circles.jpg')      # Test with oval shapes
+    # image = Image.open('supermarkets/doolhof.jpg')      # Test with maze
+
     image = image.convert("1")
     image_array = np.asarray(image)
     image_array = np.abs(image_array-1)
@@ -28,7 +34,6 @@ def get_obstacle_grid(GRIDSIZE=3, threshold=.01):
                                     col*GRIDSIZE : col*GRIDSIZE + GRIDSIZE])
                                     >= (threshold * GRIDSIZE * GRIDSIZE)):
                 obstacle_grid[row][col] = 1
-    print(np.shape(obstacle_grid))
     return obstacle_grid
 
 
