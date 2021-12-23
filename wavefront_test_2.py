@@ -37,7 +37,6 @@ def generate_wave(array, HEIGHT, WIDTH, directions):
     RUN = True
     while RUN:
         RUN = False
-        
         # Loop over all cells and check if the current value is 0
         for row in range(HEIGHT):
             for col in range(WIDTH):
@@ -217,10 +216,7 @@ def get_snake(diagonals=True,
     
     # Get the width and height of the obstacle grid.
     HEIGHT, WIDTH = obstacle_grid.shape
-    
-   
 
-        
     configuration_space = make_configuration_space(np.copy(obstacle_grid), directions, size=configuration_size)
     
     # Set start and end position
@@ -243,65 +239,12 @@ def get_snake(diagonals=True,
         plt.show()
 
     # Generate path
-    array, snake, local_min = generate_path(wave, start, end, directions)
-    
+    array, snake, local_min = generate_path(np.copy(wave), start, end, directions)
+
     for pos in snake:
         obstacle_grid[pos[0], pos[1]] = np.inf
 
-    return snake, obstacle_grid
-
-def tests_for_guus(start=[0, 0], end=[9, 14], diagonals=False, 
-              show_obstacle_grid=False, show_wave=False, 
-              obstacle_gradient=True):
-    # By default, the algorithm checks in 4 directions: left, right, up, and 
-    # down. If diagonals is set to True, the diagonals are also added.
-    directions = [[ 0,  1],
-                  [ 1,  0],
-                  [ 0, -1],
-                  [-1,  0]]
-    if diagonals==True:
-        directions.extend([[ 1,  1],
-                           [-1,  1],
-                           [ 1, -1],
-                           [-1, -1]])
-    
-    # Create an array containting all of the obstacles as ones, and free space 
-    # as zeros. If show_obstacle_grid is set to True, it will be plotted. 
-    obstacle_grid = simple_obstacle_grid()
-
-    if show_obstacle_grid==True:
-        plt.imshow(obstacle_grid)
-        plt.show()
-        
-    # Get the width and height of the obstacle grid.
-    HEIGHT, WIDTH = obstacle_grid.shape
-    
-    # Set start and end position
-    start = start
-    obstacle_grid[end[0]][end[1]] = 2
-    
-    
-    # Create start-goal gradient
-    wave = generate_wave(np.copy(obstacle_grid), HEIGHT, WIDTH, directions)
-    
-    # Add gradient around obstacle if obstacle_gradient = True
-    if obstacle_gradient == True:
-        wave += get_obstacle_gradient(obstacle_grid, directions, size=2)
-        
-    print(obstacle_grid)
-
-        
-    if show_wave == True:
-        plt.imshow(wave)
-        plt.show()
-
-    # Generate path
-    array, snake = generate_path(wave, start, end, directions)
-    
-    for pos in snake:
-        array[pos[0], pos[1]] = np.inf
-
-    return snake, array
+    return snake, obstacle_grid, configuration_space
 
 
 def main():
@@ -310,7 +253,7 @@ def main():
     # print(array)
 
     
-    snake, array = get_snake(diagonals=True, 
+    snake, array, configuration_space = get_snake(diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
               show_configuration_space=False, configuration_size=1)
     

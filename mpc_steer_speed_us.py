@@ -233,7 +233,7 @@ def predict_motion(x0, oa, od, xref):
     return xbar
 
 
-def iterative_linear_mpc_control(xref, x0, dref, oa, od):
+def iterative_linear_mpc_control(xref, x0, dref, oa, od, configuration_space):
     """
     MPC contorl with updating operational point iteraitvely
     """
@@ -245,7 +245,7 @@ def iterative_linear_mpc_control(xref, x0, dref, oa, od):
     for i in range(MAX_ITER):
         xbar = predict_motion(x0, oa, od, xref)
         poa, pod = oa[:], od[:]
-        oa, od, ox, oy, oyaw, ov = linear_mpc_control(xref, xbar, x0, dref)
+        oa, od, ox, oy, oyaw, ov = linear_mpc_control(xref, xbar, x0, dref, configuration_space)
         du = sum(abs(oa - poa)) + sum(abs(od - pod))  # calc u change value
         if du <= DU_TH:
             break
@@ -255,7 +255,7 @@ def iterative_linear_mpc_control(xref, x0, dref, oa, od):
     return oa, od, ox, oy, oyaw, ov
 
 
-def linear_mpc_control(xref, xbar, x0, dref):
+def linear_mpc_control(xref, xbar, x0, dref, configuration_space):
     """
     linear mpc control
 
@@ -287,12 +287,13 @@ def linear_mpc_control(xref, xbar, x0, dref):
                             MAX_DSTEER * DT]
 
     cost += cvxpy.quad_form(xref[:, T] - x[:, T], Qf)
-
+    
     constraints += [x[:, 0] == x0]
     constraints += [x[2, :] <= MAX_SPEED]
     constraints += [x[2, :] >= MIN_SPEED]
     constraints += [cvxpy.abs(u[0, :]) <= MAX_ACCEL]
     constraints += [cvxpy.abs(u[1, :]) <= MAX_STEER]
+
 
     prob = cvxpy.Problem(cvxpy.Minimize(cost), constraints)
     prob.solve(solver=cvxpy.ECOS, verbose=False)
@@ -370,7 +371,7 @@ def check_goal(state, goal, tind, nind):
     return False
 
 
-def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2):
+def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2, configuration_space):
     """
     Simulation
 
@@ -414,7 +415,7 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2)
         x0 = [state.x, state.y, state.v, state.yaw]  # current state
 
         oa, odelta, ox, oy, oyaw, ov = iterative_linear_mpc_control(
-            xref, x0, dref, oa, odelta)
+            xref, x0, dref, oa, odelta, configuration_space)
 
         if odelta is not None:
             di, ai = odelta[0], oa[0]
@@ -549,8 +550,9 @@ def find_all_diff(x, y, x_point, y_point):
 
 def main():
     print(__file__ + " start!!")
-    
-    snake, array = get_snake(configuration_size=2)
+
+    snake, array, configuration_space = get_snake(configuration_size=2)
+
     array = np.transpose(array)
     snake = np.array(snake)
     snake = snake.astype(float)
@@ -569,7 +571,7 @@ def main():
     fig.set_size_inches(16, 8)
             
     t, x, y, yaw, v, d, a = do_simulation(
-        cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2)
+        cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2, configuration_space)
     
 
 
