@@ -28,7 +28,7 @@ def get_obstacle_grid(GRIDSIZE=3, threshold=.01):
                                     col*GRIDSIZE : col*GRIDSIZE + GRIDSIZE])
                                     >= (threshold * GRIDSIZE * GRIDSIZE)):
                 obstacle_grid[row][col] = 1
-    print(np.shape(obstacle_grid))
+    #print(np.shape(obstacle_grid))
     return obstacle_grid
 
 
@@ -97,6 +97,7 @@ def make_configuration_space(obstacle_grid, directions, size=1):
         new_grid[new_grid!=0] = 1
         configuration_space += new_grid
         size -= 1
+
     return configuration_space
 
 def random_start_end(configuration_space):
@@ -113,36 +114,6 @@ def random_start_end(configuration_space):
                 i = i+1
     return start, end
 
-# def get_obstacle_gradient(obstacle_grid, directions, size=1, value_increase=1):
-#     # Loop over all cells and check if the object is an obstacle (value = 1)    
-#     HEIGHT, WIDTH = np.shape(obstacle_grid)
-    
-#     new_grid = np.zeros((HEIGHT, WIDTH))
-#     obstacle_gradient = np.copy(obstacle_grid)
-    
-#     while size != 0:
-#         for row in range(HEIGHT):
-#             for col in range(WIDTH):
-#                 if obstacle_gradient[row, col] != 0:
-#                 # Loop over all possible directions
-#                     for direction in directions:
-#                         # Check if not out of bounds and not an obstacle
-#                         if (row + direction[0] >= 0 and 
-#                             row + direction[0] <= HEIGHT - 1 and
-#                             col + direction[1] >= 0 and 
-#                             col + direction[1] <= WIDTH - 1 and
-#                             obstacle_gradient[row + direction[0], 
-#                                               col + direction[1]] != 1):
-#                             # Add to the value
-#                             new_grid[row + direction[0], 
-#                                      col + direction[1]] += 1
-        
-#         new_grid[new_grid!=0] = value_increase
-#         obstacle_gradient += new_grid
-#         size -= 1
-    
-#     obstacle_gradient -= obstacle_grid
-#     return obstacle_gradient
 
 def generate_path(array, start, end, directions):
     HEIGHT, WIDTH = np.shape(array)
@@ -191,7 +162,6 @@ def generate_path(array, start, end, directions):
         local_min = True
     return array, snake, local_min
         
-
 def get_snake(diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
               show_configuration_space = False, configuration_size=2):
@@ -210,7 +180,8 @@ def get_snake(diagonals=True,
     # Create an array containting all of the obstacles as ones, and free space 
     # as zeros. If show_obstacle_grid is set to True, it will be plotted. 
     obstacle_grid = get_obstacle_grid()
-
+    
+    
     if show_obstacle_grid==True:
         plt.imshow(obstacle_grid)
         plt.show()
@@ -250,59 +221,6 @@ def get_snake(diagonals=True,
 
     return snake, obstacle_grid
 
-def tests_for_guus(start=[0, 0], end=[9, 14], diagonals=False, 
-              show_obstacle_grid=False, show_wave=False, 
-              obstacle_gradient=True):
-    # By default, the algorithm checks in 4 directions: left, right, up, and 
-    # down. If diagonals is set to True, the diagonals are also added.
-    directions = [[ 0,  1],
-                  [ 1,  0],
-                  [ 0, -1],
-                  [-1,  0]]
-    if diagonals==True:
-        directions.extend([[ 1,  1],
-                           [-1,  1],
-                           [ 1, -1],
-                           [-1, -1]])
-    
-    # Create an array containting all of the obstacles as ones, and free space 
-    # as zeros. If show_obstacle_grid is set to True, it will be plotted. 
-    obstacle_grid = simple_obstacle_grid()
-
-    if show_obstacle_grid==True:
-        plt.imshow(obstacle_grid)
-        plt.show()
-        
-    # Get the width and height of the obstacle grid.
-    HEIGHT, WIDTH = obstacle_grid.shape
-    
-    # Set start and end position
-    start = start
-    obstacle_grid[end[0]][end[1]] = 2
-    
-    
-    # Create start-goal gradient
-    wave = generate_wave(np.copy(obstacle_grid), HEIGHT, WIDTH, directions)
-    
-    # Add gradient around obstacle if obstacle_gradient = True
-    if obstacle_gradient == True:
-        wave += get_obstacle_gradient(obstacle_grid, directions, size=2)
-        
-    print(obstacle_grid)
-
-        
-    if show_wave == True:
-        plt.imshow(wave)
-        plt.show()
-
-    # Generate path
-    array, snake = generate_path(wave, start, end, directions)
-    
-    for pos in snake:
-        array[pos[0], pos[1]] = np.inf
-
-    return snake, array
-
 
 def main():
     # snake, array = tests_for_guus(diagonals=True, show_obstacle_grid=False,
@@ -312,7 +230,7 @@ def main():
     
     snake, array = get_snake(diagonals=True, 
               show_obstacle_grid=False, show_wave=False, 
-              show_configuration_space=False, configuration_size=1)
+              show_configuration_space=False, configuration_size=2)
     
     plt.imshow(array)
     plt.show()

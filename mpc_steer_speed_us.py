@@ -26,7 +26,7 @@ scaling = 4 #scaling factor for plausible dimensions
 
 NX = 4  # x = x, y, v, yaw
 NU = 2  # a = [accel, steer]
-T = 8  # horizon length
+T = 7  # horizon length
 
 # mpc parameters
 R = np.diag([0.01, 0.01])  # input cost matrix
@@ -44,7 +44,7 @@ DU_TH = 0.1  # iteration finish param
 TARGET_SPEED = scaling * 10.0 / 3.6  # [m/s] target speed
 N_IND_SEARCH = 10  # Search index number
 
-DT = 0.2  # [s] time tick
+DT = 0.5  # [s] time tick
 
 scaling_car = 1
 # Vehicle parameters
@@ -56,9 +56,9 @@ WHEEL_WIDTH = scaling_car * 0.2  # [m]
 TREAD = scaling_car * 0.7  # [m]
 WB = scaling_car * 2.0  # [m]
 
-MAX_STEER = np.deg2rad(45.0)  # maximum steering angle [rad]
+MAX_STEER = np.deg2rad(50.0)  # maximum steering angle [rad]
 MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
-MAX_SPEED = scaling * 5.0 / 3.6  # maximum speed [m/s]
+MAX_SPEED = scaling * 6.0 / 3.6  # maximum speed [m/s]
 MIN_SPEED = scaling * -2.0 / 3.6  # minimum speed [m/s]
 MAX_ACCEL = scaling * 1.0  # maximum accel [m/ss]
 
@@ -184,7 +184,7 @@ def update_state(state, a, delta):
 
     if state. v > MAX_SPEED:
         state.v = MAX_SPEED
-    elif state. v < MIN_SPEED:
+    elif state.v < MIN_SPEED:
         state.v = MIN_SPEED
 
     return state
@@ -233,7 +233,7 @@ def predict_motion(x0, oa, od, xref):
     return xbar
 
 
-def iterative_linear_mpc_control(xref, x0, dref, oa, od):
+def iterative_linear_mpc_control(xref, x0, dref, oa, od,array, obstacles):
     """
     MPC contorl with updating operational point iteraitvely
     """
@@ -245,7 +245,7 @@ def iterative_linear_mpc_control(xref, x0, dref, oa, od):
     for i in range(MAX_ITER):
         xbar = predict_motion(x0, oa, od, xref)
         poa, pod = oa[:], od[:]
-        oa, od, ox, oy, oyaw, ov = linear_mpc_control(xref, xbar, x0, dref)
+        oa, od, ox, oy, oyaw, ov = linear_mpc_control(xref, xbar, x0, dref,array, obstacles)
         du = sum(abs(oa - poa)) + sum(abs(od - pod))  # calc u change value
         if du <= DU_TH:
             break
@@ -255,7 +255,7 @@ def iterative_linear_mpc_control(xref, x0, dref, oa, od):
     return oa, od, ox, oy, oyaw, ov
 
 
-def linear_mpc_control(xref, xbar, x0, dref):
+def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
     """
     linear mpc control
 
@@ -293,9 +293,28 @@ def linear_mpc_control(xref, xbar, x0, dref):
     constraints += [x[2, :] >= MIN_SPEED]
     constraints += [cvxpy.abs(u[0, :]) <= MAX_ACCEL]
     constraints += [cvxpy.abs(u[1, :]) <= MAX_STEER]
-
+    
+    #Constraint that it cannot predict to move into obstacle [min_x, max_x, min_y, max_y]
+    
+    for check_step in range(T-1,T): #Kijk voor collission in last predict step
+        close_obstacles, min_x, max_x, min_y, max_y = give_closest_obstacles(xbar, obstacles, check_step)
+    
+        for i in range(T): #Constrain voor stap 
+            threshold = 0.1 #how far from obstacle
+            if min_x != 0: #Als er een obstakel dichtbij is:
+                if min_y < xbar[1,i]: #Als obstakel boven robot ligt:
+                    constraints += [x[1,i] >= min_y + threshold] #Omgedraait, want y = 0 is bovenaan
+                if max_y > xbar[1,i]: #Als er een obstakel onder de robot ligt
+                    constraints += [x[1,i] <= max_y - threshold]
+                if min_x < xbar[0,i]: #Als obstakel links vd auto ligt:
+                    constraints += [x[0,i >= min_x + threshold]]
+                if max_x > xbar[0,i]:#Als obstakel rechts vd auto ligt:
+                    constraints += [x[0,i] <= max_x - threshold]
+    
+    #Solve that bitch
     prob = cvxpy.Problem(cvxpy.Minimize(cost), constraints)
     prob.solve(solver=cvxpy.ECOS, verbose=False)
+    
 
     if prob.status == cvxpy.OPTIMAL or prob.status == cvxpy.OPTIMAL_INACCURATE:
         ox = get_nparray_from_matrix(x.value[0, :])
@@ -406,7 +425,8 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2)
     odelta, oa = None, None
 
     cyaw = smooth_yaw(cyaw)
-
+    
+    obstacles = get_obstacles(array)
     while MAX_TIME >= time:
         xref, target_ind, dref = calc_ref_trajectory(
             state, cx, cy, cyaw, ck, sp, dl, target_ind)
@@ -414,7 +434,7 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2)
         x0 = [state.x, state.y, state.v, state.yaw]  # current state
 
         oa, odelta, ox, oy, oyaw, ov = iterative_linear_mpc_control(
-            xref, x0, dref, oa, odelta)
+            xref, x0, dref, oa, odelta,array, obstacles)
 
         if odelta is not None:
             di, ai = odelta[0], oa[0]
@@ -512,7 +532,7 @@ def smooth_yaw(yaw):
     for i in range(len(yaw) - 1):
         dyaw = yaw[i + 1] - yaw[i]
 
-        while dyaw >= math.pi / 2.0:
+        while dyaw > math.pi / 2.0:
             yaw[i + 1] -= math.pi * 2.0
             dyaw = yaw[i + 1] - yaw[i]
 
@@ -546,18 +566,75 @@ def find_all_diff(x, y, x_point, y_point):
     
     return differences
 
+def get_obstacles(array):
+    
+    #Input = array/grid with {0,1}
+    obstacles = np.array(np.where(array == 1))
+    
+    #Als deze nog omgedraait moeten worden:
+    #obs_temp = np.zeros((obstacles.shape))
+    #obs_temp[:,0] = obstacles[:,1]
+    #obs_temp[:,1] = obstacles[:,0]
+    
+    #Output is (2,..) array with y,x coordinates of obstacle points
+    return obstacles
 
+def give_closest_obstacles(xbar, obstacles, check_step):
+    #latest_step = estimated path, latest horizon step, x and y coordinates
+    collision_check_steps = xbar[0:2,check_step] #= estimated path latest horizon step, x and y coordinates
+    x_round = np.round(collision_check_steps[0])
+    y_round = np.round(collision_check_steps[1])
+    
+    #Make squared search field of 3x3 around last predicted point
+    index_y1 = np.array(np.where(obstacles[0] == y_round - 1))
+    index_y2 = np.array(np.where(obstacles[0] == y_round))
+    index_y3 = np.array(np.where(obstacles[0] == y_round + 1))
+    index_x1 = np.array(np.where(obstacles[1] == x_round - 1))
+    index_x2 = np.array(np.where(obstacles[1] == x_round))
+    index_x3 = np.array(np.where(obstacles[1] == x_round + 1))
+    
+    close_obstacle_index_y = np.hstack((index_y1, index_y2, index_y3))
+    close_obstacle_index_x = np.hstack((index_x1, index_x2, index_x3))
+    
+    #Check if search_field contains an obstacle:
+    close_obstacle_index = np.intersect1d(close_obstacle_index_x,close_obstacle_index_y)
+    closest_obstacles = []
+    if close_obstacle_index.size != 0:
+        
+        for i in range(len(close_obstacle_index)):
+            closest_obstacles.append(obstacles[:,close_obstacle_index[i]]) #y,x
+    
+    #Switch to numpy array
+    closest_obstacles = np.array(closest_obstacles) #y,x
+    
+    #Define min and max of x and y coordinates closests obstacles
+    min_x = min_y = max_x = max_y = 0
+    if closest_obstacles.size != 0:
+         max_x = np.amax(closest_obstacles[:,1])
+         min_x = np.amin(closest_obstacles[:,1])
+         max_y = np.amax(closest_obstacles[:,0])
+         min_y = np.amin(closest_obstacles[:,0])
+    print(min_x, max_x, min_y, max_y)
+    
+    #[min_x, max_x, min_y, max_y]
+    
+
+    #Returns an array with the y,x coordinates of the closest obstacle points
+    return closest_obstacles, min_x, max_x, min_y, max_y
+    
 def main():
-    print(__file__ + " start!!")
+    print('START')
+    #print(__file__ + " start!!")
     
     snake, array = get_snake(configuration_size=1)
     array = np.transpose(array)
+    
     snake = np.array(snake)
     snake = snake.astype(float)
+    
     dl = 1.0  # course tick
     ax = list(snake[:,0])
     ay = list(snake[:,1])
-    
 
     cx, cy, cyaw, ck = get_forward_course(dl, ax, ay)
     sp = calc_speed_profile(cx, cy, cyaw, TARGET_SPEED)
