@@ -104,7 +104,10 @@ def make_configuration_space(obstacle_grid, directions, size=1):
         size -= 1
     return configuration_space
 
-def random_start_end(configuration_space):
+def random_start_end(obstacle_grid, directions):
+
+    configuration_space = make_configuration_space(obstacle_grid, directions, size=2)
+
     i = 0
     while i < 2:
         randomRow = np.random.randint(configuration_space.shape[0], size=1)
@@ -226,7 +229,7 @@ def get_snake(diagonals=True,
     configuration_space = make_configuration_space(np.copy(obstacle_grid), directions, size=configuration_size)
     
     # Set start and end position
-    start, end = random_start_end(configuration_space)
+    start, end = random_start_end(obstacle_grid, directions)
     configuration_space[end[0]][end[1]] = 2
 
     if show_configuration_space==True:
