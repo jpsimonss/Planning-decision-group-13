@@ -65,7 +65,7 @@ MAX_SPEED = scaling * 5.0 / 3.6  # maximum speed [m/s]
 MIN_SPEED = scaling * -2.0 / 3.6  # minimum speed [m/s]
 MAX_ACCEL = scaling * 1.0  # maximum accel [m/ss]
 
-show_animation = True
+show_animation = True 
 
 
 class State:
@@ -252,8 +252,8 @@ def iterative_linear_mpc_control(xref, x0, dref, oa, od, configuration_space):
         du = sum(abs(oa - poa)) + sum(abs(od - pod))  # calc u change value
         if du <= DU_TH:
             break
-    else:
-        print("Iterative is max iter")
+    # else:
+    #     print("Iterative is max iter")
 
     return oa, od, ox, oy, oyaw, ov
 
@@ -617,3 +617,36 @@ def main():
 if __name__ == '__main__':
     main()
     # main2()
+
+def multiple_max_diff():
+    print(__file__ + " start!!")
+
+    snake, array, configuration_space = get_snake(configuration_size=2)
+
+    array = np.transpose(array)
+    snake = np.array(snake)
+    snake = snake.astype(float)
+    dl = 1.0  # course tick
+    ax = list(snake[:,0])
+    ay = list(snake[:,1])
+    
+
+    cx, cy, cyaw, ck = get_forward_course(dl, ax, ay)
+    sp = calc_speed_profile(cx, cy, cyaw, TARGET_SPEED)
+
+    
+    initial_state = State(x=cx[0], y=cy[0], yaw=cyaw[0], v=0.0)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    fig.set_size_inches(16, 8)
+            
+    t, x, y, yaw, v, d, a = do_simulation(
+        cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2, configuration_space)
+    
+
+
+    differences = find_all_diff(x, y, ax, ay)
+    acceptable_difference = ones_like(differences) * (2.5/scaling - 0.25 ) #minimal distance between planned path and obstacle
+    print("max difference", np.max(differences))
+
+    return np.max(differences)
