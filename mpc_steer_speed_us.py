@@ -116,7 +116,8 @@ def get_linear_model_matrix(v, phi, delta):
     return A, B, C
 
 
-def plot_car(x, y, yaw, axes, steer=0.0, cabcolor="-r", truckcolor="-k"):  # pragma: no cover
+def plot_car(x, y, yaw, axes, steer=0.0, cabcolor="-r", truckcolor="-g"):  # pragma: no cover
+    linewidth = 2
 
     outline = np.array([[-BACKTOWHEEL, (LENGTH - BACKTOWHEEL), (LENGTH - BACKTOWHEEL), -BACKTOWHEEL, -BACKTOWHEEL],
                         [WIDTH / 2, WIDTH / 2, - WIDTH / 2, -WIDTH / 2, WIDTH / 2]])
@@ -160,15 +161,15 @@ def plot_car(x, y, yaw, axes, steer=0.0, cabcolor="-r", truckcolor="-k"):  # pra
     rl_wheel[1, :] += y
 
     axes.plot(np.array(outline[0, :]).flatten(),
-             np.array(outline[1, :]).flatten(), truckcolor)
+             np.array(outline[1, :]).flatten(), truckcolor, linewidth=linewidth)
     axes.plot(np.array(fr_wheel[0, :]).flatten(),
-             np.array(fr_wheel[1, :]).flatten(), truckcolor)
+             np.array(fr_wheel[1, :]).flatten(), truckcolor, linewidth=linewidth)
     axes.plot(np.array(rr_wheel[0, :]).flatten(),
-             np.array(rr_wheel[1, :]).flatten(), truckcolor)
+             np.array(rr_wheel[1, :]).flatten(), truckcolor, linewidth=linewidth)
     axes.plot(np.array(fl_wheel[0, :]).flatten(),
-             np.array(fl_wheel[1, :]).flatten(), truckcolor)
+             np.array(fl_wheel[1, :]).flatten(), truckcolor, linewidth=linewidth)
     axes.plot(np.array(rl_wheel[0, :]).flatten(),
-             np.array(rl_wheel[1, :]).flatten(), truckcolor)
+             np.array(rl_wheel[1, :]).flatten(), truckcolor, linewidth=linewidth)
     axes.plot(x, y, "*")
 
 
@@ -448,9 +449,9 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2,
             if ox is not None:
                 ax1.plot(ox, oy, "xr", label="MPC")
             ax1.plot(cx, cy, "-r", label="course")
-            ax1.plot(x, y, "ob", label="trajectory")
-            ax1.plot(xref[0, :], xref[1, :], "xk", label="xref")
-            ax1.plot(cx[target_ind], cy[target_ind], "xg", label="target")
+            ax1.plot(x, y, "ob", label="trajectory", markersize=1)
+            ax1.plot(xref[0, :], xref[1, :], "xk", label="xref", markersize=1)
+            ax1.plot(cx[target_ind], cy[target_ind], "xg", label="target", markersize=1)
             plot_car(state.x, state.y, state.yaw, axes=ax1, steer=di)
             ax1.imshow(array)
             ax1.axis("equal")
