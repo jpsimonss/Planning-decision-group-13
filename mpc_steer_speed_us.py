@@ -1,32 +1,33 @@
 """
 
 Path tracking simulation with iterative linear model predictive control for speed and steer control
-
-author: Atsushi Sakai (@Atsushi_twi)
+Original author: Atsushi Sakai (@Atsushi_twi)
 
 """
+#Fix file loading
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'CubicSpline'))
+
+
 import matplotlib.pyplot as plt
 import cvxpy
 import math
 import numpy as np
-import sys
 from numpy.lib.function_base import diff
 from numpy.ma.core import subtract
 import shapely.geometry as geom
-sys.path.append("CubicSpline/")
-
-try:
-    import cubic_spline_planner
-except:
-    raise
-
 from wavefront_test_2 import get_snake
+import cubic_spline_planner
+
+
+
+
 
 scaling = 4 #scaling factor for plausible dimensions
 
 NX = 4  # x = x, y, v, yaw
 NU = 2  # a = [accel, steer]
-T = 7  # horizon length
+T = 15  # horizon length
 
 # mpc parameters
 R = np.diag([0.01, 0.01])  # input cost matrix
@@ -294,11 +295,36 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
     constraints += [cvxpy.abs(u[0, :]) <= MAX_ACCEL]
     constraints += [cvxpy.abs(u[1, :]) <= MAX_STEER]
     
+    
+    
     #Constraint that it cannot predict to move into obstacle [min_x, max_x, min_y, max_y]
+    minus_x = maxes_x = minus_y = maxes_y = np.array([0])
+    for check_step in range(5,T): #Kijk voor collission in these predict steps
+        min_x, max_x, min_y, max_y = give_closest_obstacles(xbar, obstacles, check_step)
+        minus_x = np.append(minus_x ,min_x)
+        maxes_x = np.append(maxes_x, max_x)
+        minus_y = np.append(minus_y, min_y)
+        maxes_y = np.append(maxes_y, max_y)
     
-    for check_step in range(T-1,T): #Kijk voor collission in last predict step
-        close_obstacles, min_x, max_x, min_y, max_y = give_closest_obstacles(xbar, obstacles, check_step)
+    #Get outside of obstacle
+    max_x = np.amax(maxes_x)
+    max_y = np.amax(maxes_y)
+    if max_x != 0: #If an obstacle is detected:
+        min_x = np.amin(minus_x[np.nonzero(minus_x)])
+        min_y = np.amin(minus_y[np.nonzero(minus_y)])
+        print(min_x, max_x, min_y, max_y)
     
+        #NOG VERANDEREN
+        threshold = 0.01
+        for t in range(8,T):
+            if xbar[0,t] >= min_x - threshold and xbar[0,t] <= max_x + threshold:
+                constraints += [x[1,t] <= min_y - threshold]
+                constraints += [x[1,t] >= max_y + threshold]
+            if xbar[1,t] >= min_y - threshold and xbar[1,t] <= max_y + threshold:            
+                constraints += [x[0,t] <= min_x - threshold]
+                constraints += [x[0,t] >= max_x + threshold]            
+    
+    '''
         for i in range(T): #Constrain voor stap 
             threshold = 0.1 #how far from obstacle
             if min_x != 0: #Als er een obstakel dichtbij is:
@@ -310,7 +336,7 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
                     constraints += [x[0,i >= min_x + threshold]]
                 if max_x > xbar[0,i]:#Als obstakel rechts vd auto ligt:
                     constraints += [x[0,i] <= max_x - threshold]
-    
+    '''
     #Solve that bitch
     prob = cvxpy.Problem(cvxpy.Minimize(cost), constraints)
     prob.solve(solver=cvxpy.ECOS, verbose=False)
@@ -580,7 +606,8 @@ def get_obstacles(array):
     return obstacles
 
 def give_closest_obstacles(xbar, obstacles, check_step):
-    #latest_step = estimated path, latest horizon step, x and y coordinates
+    #Only does one checkstep max
+    
     collision_check_steps = xbar[0:2,check_step] #= estimated path latest horizon step, x and y coordinates
     x_round = np.round(collision_check_steps[0])
     y_round = np.round(collision_check_steps[1])
@@ -614,13 +641,12 @@ def give_closest_obstacles(xbar, obstacles, check_step):
          min_x = np.amin(closest_obstacles[:,1])
          max_y = np.amax(closest_obstacles[:,0])
          min_y = np.amin(closest_obstacles[:,0])
-    print(min_x, max_x, min_y, max_y)
-    
+    #print(min_x, max_x, min_y, max_y)
     #[min_x, max_x, min_y, max_y]
     
 
     #Returns an array with the y,x coordinates of the closest obstacle points
-    return closest_obstacles, min_x, max_x, min_y, max_y
+    return min_x, max_x, min_y, max_y
     
 def main():
     print('START')
