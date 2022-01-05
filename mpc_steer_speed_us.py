@@ -26,11 +26,11 @@ scaling = 4 #scaling factor for plausible dimensions
 
 NX = 4  # x = x, y, v, yaw
 NU = 2  # a = [accel, steer]
-T = 8  # horizon length
+T = 12  # horizon length
 
 # mpc parameters
 R = np.diag([0.01, 0.01])  # input cost matrix
-Rd = np.diag([0.01, 1.0])  # input difference cost matrix
+Rd = np.diag([0.01, 5.0])  # input difference cost matrix
 Q = np.diag([1.0, 1.0, 0.5, 0.5])  # state cost matrix
 Qf = Q  # state final matrix
 GOAL_DIS = scaling * 0.3 # goal distance
