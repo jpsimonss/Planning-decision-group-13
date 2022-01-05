@@ -19,19 +19,15 @@ import shapely.geometry as geom
 from wavefront_test_2 import get_snake
 import cubic_spline_planner
 
-
-
-
-
 scaling = 4 #scaling factor for plausible dimensions
 
 NX = 4  # x = x, y, v, yaw
 NU = 2  # a = [accel, steer]
-T = 8  # horizon length
+T = 12  # horizon length
 
 # mpc parameters
 R = np.diag([0.01, 0.01])  # input cost matrix
-Rd = np.diag([0.015, 1.0])  # input difference cost matrix
+Rd = np.diag([0.01, 5.0])  # input difference cost matrix
 Q = np.diag([1.0, 1.0, 0.5, 0.5])  # state cost matrix
 Qf = Q  # state final matrix
 GOAL_DIS = scaling * 0.3 # goal distance
@@ -39,27 +35,29 @@ STOP_SPEED = scaling * 0.1 / 3.6  # stop speed
 MAX_TIME = 500.0  # max simulation time
 
 # iterative paramter
-MAX_ITER = 3  # Max iteration #originally 3
+MAX_ITER = 5  # Max iteration
 DU_TH = 0.1  # iteration finish param
 
 TARGET_SPEED = scaling * 10.0 / 3.6  # [m/s] target speed
 N_IND_SEARCH = 10  # Search index number
 
-DT = 0.5  # [s] time tick
+DT = 0.2  # [s] time tick
+
 
 scaling_car = 1
 # Vehicle parameters
-LENGTH = scaling_car * 3.0  # [m]
-WIDTH = scaling_car * 2.0  # [m]
-BACKTOWHEEL = scaling_car * 0.5  # [m]
-WHEEL_LEN = scaling_car * 0.3  # [m]
-WHEEL_WIDTH = scaling_car * 0.2  # [m]
-TREAD = scaling_car * 0.7  # [m]
-WB = scaling_car * 2.0  # [m]
+# Each cell is 1/scaling meter
+LENGTH = scaling_car * 3.0  # [cells]
+WIDTH = scaling_car * 2.0  # [cells]
+BACKTOWHEEL = scaling_car * 0.5  # [cells]
+WHEEL_LEN = scaling_car * 0.3  # [cells]
+WHEEL_WIDTH = scaling_car * 0.2  # [cells]
+TREAD = scaling_car * 0.7  # [cells]
+WB = scaling_car * 2.0  # [cells]
 
 MAX_STEER = np.deg2rad(45.0)  # maximum steering angle [rad]
 MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
-MAX_SPEED = scaling * 10.0 / 3.6  # maximum speed [m/s]
+MAX_SPEED = scaling * 5.0 / 3.6  # maximum speed [m/s]
 MIN_SPEED = scaling * -2.0 / 3.6  # minimum speed [m/s]
 MAX_ACCEL = scaling * 1.0  # maximum accel [m/ss]
 
@@ -114,7 +112,7 @@ def get_linear_model_matrix(v, phi, delta):
     return A, B, C
 
 
-def plot_car(x, y, yaw, axes, steer=0.0, cabcolor="-r", truckcolor="-k"):  # pragma: no cover
+def plot_car(x, y, yaw, axes, steer=0.0, cabcolor="-r", truckcolor="-g"):  # pragma: no cover
 
     outline = np.array([[-BACKTOWHEEL, (LENGTH - BACKTOWHEEL), (LENGTH - BACKTOWHEEL), -BACKTOWHEEL, -BACKTOWHEEL],
                         [WIDTH / 2, WIDTH / 2, - WIDTH / 2, -WIDTH / 2, WIDTH / 2]])
@@ -296,6 +294,8 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
     constraints += [cvxpy.abs(u[0, :]) <= MAX_ACCEL]
     constraints += [cvxpy.abs(u[1, :]) <= MAX_STEER]
     
+    prob = cvxpy.Problem(cvxpy.Minimize(cost), constraints)
+
     #Constraint that it cannot predict to move into obstacle
     minus_x = maxes_x = minus_y = maxes_y = np.array([0])
     for check_step in range(T): #Kijk voor collission in these predict steps
@@ -312,86 +312,94 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
         min_x = np.amin(minus_x[np.nonzero(minus_x)])
         min_y = np.amin(minus_y[np.nonzero(minus_y)])
         print(min_x, max_x, min_y, max_y)
-    
-    ratio = 0
-    threshold = 0.1
-    
-    #Constrain voor stap
-    for t in range(T):
-        if xbar[0,t] >= min_x - threshold and xbar[0,t] <= max_x + threshold:
-                #Straffen dat die onder max_y of boven min_y komt
-                #if xbar[1,t] <= max_y and xbar[1,t] >= min_y:
-                
-                #Als auto onder object:
-            if xbar[1,3] > max_y + threshold:
-                print("Inbetween x, below max_y")
-                cost += ratio * (max_y - x[1,t])
-                    
-                #Als auto boven object:
-                #if xbar[1,3] < min_y - threshold:
-                print("Inbetween both x, above min_y")
-                cost += ratio * (x[1,t] - min_y)
-                
-                
-                #constraints += [x[1,t] <= min_y - threshold]
-                #constraints += [x[1,t] >= max_y + threshold]
-                #if xbar[1,t] >= min_y - threshold and xbar[1,t] <= max_y + threshold:
-                #    cost += []
-        if xbar[1,t] >= min_y - threshold and xbar[1,t] <= max_y + threshold:            
-                #constraints += [x[0,t] <= min_x - threshold]
-                #constraints += [x[0,t] >= max_x + threshold]            
-                #if xbar[0,t] >= min_x and xbar[0,t] <= max_x:
-                #ALS links van object
-            if xbar[0,3] < min_x - threshold:
-                print("Inbetween both y, left of min_x")
-                cost += ratio * (x[0,t] - min_x)
-            if xbar[0,3] > max_x + threshold:
-                print("Inbetween both y, right of max_x")
-                cost += ratio * (max_x - x[0,t])
-    
-    '''
-    #NOG VERANDEREN
-        threshold = 0.01
-        for t in range(8,T):
-            if xbar[0,t] >= min_x - threshold and xbar[0,t] <= max_x + threshold:
-                constraints += [x[1,t] <= min_y - threshold]
-                constraints += [x[1,t] >= max_y + threshold]
-            if xbar[1,t] >= min_y - threshold and xbar[1,t] <= max_y + threshold:            
-                constraints += [x[0,t] <= min_x - threshold]
-                constraints += [x[0,t] >= max_x + threshold]                   
-    '''
-    
-    '''
+
         for i in range(T): #Constrain voor stap 
-            threshold = 0.1 #how far from obstacle
-            if min_x != 0: #Als er een obstakel dichtbij is:
-                if min_y < xbar[1,i]: #Als obstakel boven robot ligt:
-                    constraints += [x[1,i] >= min_y + threshold] #Omgedraait, want y = 0 is bovenaan
-                if max_y > xbar[1,i]: #Als er een obstakel onder de robot ligt
-                    constraints += [x[1,i] <= max_y - threshold]
-                if min_x < xbar[0,i]: #Als obstakel links vd auto ligt:
-                    constraints += [x[0,i >= min_x + threshold]]
-                if max_x > xbar[0,i]:#Als obstakel rechts vd auto ligt:
-                    constraints += [x[0,i] <= max_x - threshold]
-    '''
-    
-    
-    #Solve that bitch
-    prob = cvxpy.Problem(cvxpy.Minimize(cost), constraints)
-    prob.solve(solver=cvxpy.ECOS, verbose=False) #verbose = show output
-    
+            threshold = .5 #how far from obstacle
+            # if min_x != 0 or min_y != 0: #Als er een obstakel dichtbij is:
+            if min_y < xbar[1,i]: #Als obstakel boven robot ligt:
+                constraints += [x[1,i] >= min_y + threshold] #Omgedraait, want y = 0 is bovenaan
+            if max_y > xbar[1,i]: #Als er een obstakel onder de robot ligt
+                constraints += [x[1,i] <= max_y - threshold]
+            if min_x < xbar[0,i]: #Als obstakel links vd auto ligt:
+                constraints += [x[0,i] >= min_x + threshold]
+            if max_x > xbar[0,i]:#Als obstakel rechts vd auto ligt:
+                constraints += [x[0,i] <= max_x - threshold]
 
-    if prob.status == cvxpy.OPTIMAL or prob.status == cvxpy.OPTIMAL_INACCURATE:
-       ox = get_nparray_from_matrix(x.value[0, :])
-       oy = get_nparray_from_matrix(x.value[1, :])
-       ov = get_nparray_from_matrix(x.value[2, :])
-       oyaw = get_nparray_from_matrix(x.value[3, :])
-       oa = get_nparray_from_matrix(u.value[0, :])
-       odelta = get_nparray_from_matrix(u.value[1, :])
-
+    # ratio = 0
+    # threshold = 0.1
+    
+    # #Constrain voor stap
+    # for t in range(T):
+    #     if xbar[0,t] >= min_x - threshold and xbar[0,t] <= max_x + threshold:
+    #             #Straffen dat die onder max_y of boven min_y komt
+    #             #if xbar[1,t] <= max_y and xbar[1,t] >= min_y:
+                
+    #             #Als auto onder object:
+    #         if xbar[1,3] > max_y + threshold:
+    #             print("Inbetween x, below max_y")
+    #             cost += ratio * (max_y - x[1,t])
+                    
+    #             #Als auto boven object:
+    #             #if xbar[1,3] < min_y - threshold:
+    #             print("Inbetween both x, above min_y")
+    #             cost += ratio * (x[1,t] - min_y)
+                
+                
+    #             #constraints += [x[1,t] <= min_y - threshold]
+    #             #constraints += [x[1,t] >= max_y + threshold]
+    #             #if xbar[1,t] >= min_y - threshold and xbar[1,t] <= max_y + threshold:
+    #             #    cost += []
+    #     if xbar[1,t] >= min_y - threshold and xbar[1,t] <= max_y + threshold:            
+    #             #constraints += [x[0,t] <= min_x - threshold]
+    #             #constraints += [x[0,t] >= max_x + threshold]            
+    #             #if xbar[0,t] >= min_x and xbar[0,t] <= max_x:
+    #             #ALS links van object
+    #         if xbar[0,3] < min_x - threshold:
+    #             print("Inbetween both y, left of min_x")
+    #             cost += ratio * (x[0,t] - min_x)
+    #         if xbar[0,3] > max_x + threshold:
+    #             print("Inbetween both y, right of max_x")
+    #             cost += ratio * (max_x - x[0,t])
+    
+    # '''
+    # #NOG VERANDEREN
+    #     threshold = 0.01
+    #     for t in range(8,T):
+    #         if xbar[0,t] >= min_x - threshold and xbar[0,t] <= max_x + threshold:
+    #             constraints += [x[1,t] <= min_y - threshold]
+    #             constraints += [x[1,t] >= max_y + threshold]
+    #         if xbar[1,t] >= min_y - threshold and xbar[1,t] <= max_y + threshold:            
+    #             constraints += [x[0,t] <= min_x - threshold]
+    #             constraints += [x[0,t] >= max_x + threshold]                   
+    # '''
+    
+    
+    prob_2 = cvxpy.Problem(cvxpy.Minimize(cost), constraints)
+    prob_2.solve(solver=cvxpy.ECOS, verbose=False) #verbose = show output
+    if prob_2.status == cvxpy.OPTIMAL or prob_2.status == cvxpy.OPTIMAL_INACCURATE:
+        # print("using hard problem")
+        ox = get_nparray_from_matrix(x.value[0, :])
+        oy = get_nparray_from_matrix(x.value[1, :])
+        ov = get_nparray_from_matrix(x.value[2, :])
+        oyaw = get_nparray_from_matrix(x.value[3, :])
+        oa = get_nparray_from_matrix(u.value[0, :])
+        odelta = get_nparray_from_matrix(u.value[1, :])
+       
     else:
-        print("Error: Cannot solve mpc..")
-        oa, odelta, ox, oy, oyaw, ov = None, None, None, None, None, None
+        prob.solve(solver=cvxpy.ECOS, verbose=False) #verbose = show 
+
+        if prob.status == cvxpy.OPTIMAL or prob.status == cvxpy.OPTIMAL_INACCURATE:
+            print("using easy problem")
+            ox = get_nparray_from_matrix(x.value[0, :])
+            oy = get_nparray_from_matrix(x.value[1, :])
+            ov = get_nparray_from_matrix(x.value[2, :])
+            oyaw = get_nparray_from_matrix(x.value[3, :])
+            oa = get_nparray_from_matrix(u.value[0, :])
+            odelta = get_nparray_from_matrix(u.value[1, :])
+
+        else:
+            print("Error: Cannot solve mpc..")
+            oa, odelta, ox, oy, oyaw, ov = None, None, None, None, None, None
 
     return oa, odelta, ox, oy, oyaw, ov
 
@@ -454,7 +462,7 @@ def check_goal(state, goal, tind, nind):
     return False
 
 
-def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2):
+def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2, configuration_space):
     """
     Simulation
 
@@ -491,7 +499,7 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2)
 
     cyaw = smooth_yaw(cyaw)
     
-    obstacles = get_obstacles(array)
+    obstacles = get_obstacles(configuration_space)
     while MAX_TIME >= time:
         xref, target_ind, dref = calc_ref_trajectory(
             state, cx, cy, cyaw, ck, sp, dl, target_ind)
@@ -529,9 +537,9 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2)
             if ox is not None:
                 ax1.plot(ox, oy, "xr", label="MPC")
             ax1.plot(cx, cy, "-r", label="course")
-            ax1.plot(x, y, "ob", label="trajectory")
-            ax1.plot(xref[0, :], xref[1, :], "xk", label="xref")
-            ax1.plot(cx[target_ind], cy[target_ind], "xg", label="target")
+            ax1.plot(x, y, "ob", label="trajectory", markersize=1)
+            ax1.plot(xref[0, :], xref[1, :], "xk", label="xref", markersize=1)
+            ax1.plot(cx[target_ind], cy[target_ind], "xg", label="target", markersize=1)
             plot_car(state.x, state.y, state.yaw, axes=ax1, steer=di)
             ax1.imshow(array)
             ax1.axis("equal")
@@ -547,7 +555,7 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2)
             ax2.plot(xref[0, :], xref[1, :], "xk", label="xref")
             ax2.plot(cx[target_ind], cy[target_ind], "xg", label="target")
             plot_car(state.x, state.y, state.yaw, axes=ax2, steer=di)
-            ax2.imshow(array)
+            ax2.imshow(configuration_space)
             ax2.axis([state.x-15, state.x+15, 
                       state.y+15, state.y-15])
             ax2.grid(True)
@@ -691,7 +699,8 @@ def main():
     print('START')
     #print(__file__ + " start!!")
     
-    snake, array = get_snake(configuration_size=1)
+    snake, array, configuration_space = get_snake(configuration_size=1)
+    configuration_space = configuration_space.T
     array = np.transpose(array)
     
     snake = np.array(snake)
@@ -711,7 +720,7 @@ def main():
     fig.set_size_inches(16, 8)
             
     t, x, y, yaw, v, d, a = do_simulation(
-        cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2)
+        cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2, configuration_space)
     
 
 

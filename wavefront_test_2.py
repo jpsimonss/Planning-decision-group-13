@@ -219,7 +219,7 @@ def get_snake(diagonals=True,
     for pos in snake:
         obstacle_grid[pos[0], pos[1]] = np.inf
 
-    return snake, obstacle_grid
+    return snake, obstacle_grid, configuration_space
 
 
 def main():
