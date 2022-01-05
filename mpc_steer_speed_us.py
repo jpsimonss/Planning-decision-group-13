@@ -27,7 +27,7 @@ scaling = 4 #scaling factor for plausible dimensions
 
 NX = 4  # x = x, y, v, yaw
 NU = 2  # a = [accel, steer]
-T = 8  # horizon length
+T = 7  # horizon length
 
 # mpc parameters
 R = np.diag([0.01, 0.01])  # input cost matrix
@@ -45,7 +45,7 @@ DU_TH = 0.1  # iteration finish param
 TARGET_SPEED = scaling * 10.0 / 3.6  # [m/s] target speed
 N_IND_SEARCH = 10  # Search index number
 
-DT = 0.5  # [s] time tick
+DT = 0.2  # [s] time tick
 
 scaling_car = 1
 # Vehicle parameters
@@ -311,10 +311,11 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
     if max_x != 0: #If an obstacle is detected:
         min_x = np.amin(minus_x[np.nonzero(minus_x)])
         min_y = np.amin(minus_y[np.nonzero(minus_y)])
+        print(f'Own location = (x,y) = {np.round(xbar[0,0]), np.round(xbar[1,0])}')
         print(min_x, max_x, min_y, max_y)
     
-    ratio = 0
-    threshold = 0.1
+    ratio = 10
+    threshold = 0.2
     
     #Constrain voor stap
     for t in range(T):
@@ -323,13 +324,13 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
                 #if xbar[1,t] <= max_y and xbar[1,t] >= min_y:
                 
                 #Als auto onder object:
-            if xbar[1,3] > max_y + threshold:
+            if xbar[1,0] > max_y + threshold:
                 print("Inbetween x, below max_y")
                 cost += ratio * (max_y - x[1,t])
                     
                 #Als auto boven object:
-                #if xbar[1,3] < min_y - threshold:
-                print("Inbetween both x, above min_y")
+            if xbar[1,0] < min_y - threshold:
+                print("Inbetween x, above min_y")
                 cost += ratio * (x[1,t] - min_y)
                 
                 
@@ -342,11 +343,11 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
                 #constraints += [x[0,t] >= max_x + threshold]            
                 #if xbar[0,t] >= min_x and xbar[0,t] <= max_x:
                 #ALS links van object
-            if xbar[0,3] < min_x - threshold:
-                print("Inbetween both y, left of min_x")
+            if xbar[0,0] < min_x - threshold:
+                print("Inbetween y, left of min_x")
                 cost += ratio * (x[0,t] - min_x)
-            if xbar[0,3] > max_x + threshold:
-                print("Inbetween both y, right of max_x")
+            if xbar[0,0] > max_x + threshold:
+                print("Inbetween y, right of max_x")
                 cost += ratio * (max_x - x[0,t])
     
     '''
