@@ -27,11 +27,11 @@ scaling = 4 #scaling factor for plausible dimensions
 
 NX = 4  # x = x, y, v, yaw
 NU = 2  # a = [accel, steer]
-T = 15  # horizon length
+T = 8  # horizon length
 
 # mpc parameters
 R = np.diag([0.01, 0.01])  # input cost matrix
-Rd = np.diag([0.01, 1.0])  # input difference cost matrix
+Rd = np.diag([0.015, 1.0])  # input difference cost matrix
 Q = np.diag([1.0, 1.0, 0.5, 0.5])  # state cost matrix
 Qf = Q  # state final matrix
 GOAL_DIS = scaling * 0.3 # goal distance
@@ -39,7 +39,7 @@ STOP_SPEED = scaling * 0.1 / 3.6  # stop speed
 MAX_TIME = 500.0  # max simulation time
 
 # iterative paramter
-MAX_ITER = 3  # Max iteration
+MAX_ITER = 3  # Max iteration #originally 3
 DU_TH = 0.1  # iteration finish param
 
 TARGET_SPEED = scaling * 10.0 / 3.6  # [m/s] target speed
@@ -57,9 +57,9 @@ WHEEL_WIDTH = scaling_car * 0.2  # [m]
 TREAD = scaling_car * 0.7  # [m]
 WB = scaling_car * 2.0  # [m]
 
-MAX_STEER = np.deg2rad(50.0)  # maximum steering angle [rad]
+MAX_STEER = np.deg2rad(45.0)  # maximum steering angle [rad]
 MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
-MAX_SPEED = scaling * 6.0 / 3.6  # maximum speed [m/s]
+MAX_SPEED = scaling * 10.0 / 3.6  # maximum speed [m/s]
 MIN_SPEED = scaling * -2.0 / 3.6  # minimum speed [m/s]
 MAX_ACCEL = scaling * 1.0  # maximum accel [m/ss]
 
@@ -288,18 +288,17 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
                             MAX_DSTEER * DT]
 
     cost += cvxpy.quad_form(xref[:, T] - x[:, T], Qf)
-
+    #print(f' {cost = }')
+    
     constraints += [x[:, 0] == x0]
     constraints += [x[2, :] <= MAX_SPEED]
     constraints += [x[2, :] >= MIN_SPEED]
     constraints += [cvxpy.abs(u[0, :]) <= MAX_ACCEL]
     constraints += [cvxpy.abs(u[1, :]) <= MAX_STEER]
     
-    
-    
-    #Constraint that it cannot predict to move into obstacle [min_x, max_x, min_y, max_y]
+    #Constraint that it cannot predict to move into obstacle
     minus_x = maxes_x = minus_y = maxes_y = np.array([0])
-    for check_step in range(5,T): #Kijk voor collission in these predict steps
+    for check_step in range(T): #Kijk voor collission in these predict steps
         min_x, max_x, min_y, max_y = give_closest_obstacles(xbar, obstacles, check_step)
         minus_x = np.append(minus_x ,min_x)
         maxes_x = np.append(maxes_x, max_x)
@@ -314,7 +313,44 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
         min_y = np.amin(minus_y[np.nonzero(minus_y)])
         print(min_x, max_x, min_y, max_y)
     
-        #NOG VERANDEREN
+    ratio = 0
+    threshold = 0.1
+    
+    #Constrain voor stap
+    for t in range(T):
+        if xbar[0,t] >= min_x - threshold and xbar[0,t] <= max_x + threshold:
+                #Straffen dat die onder max_y of boven min_y komt
+                #if xbar[1,t] <= max_y and xbar[1,t] >= min_y:
+                
+                #Als auto onder object:
+            if xbar[1,3] > max_y + threshold:
+                print("Inbetween x, below max_y")
+                cost += ratio * (max_y - x[1,t])
+                    
+                #Als auto boven object:
+                #if xbar[1,3] < min_y - threshold:
+                print("Inbetween both x, above min_y")
+                cost += ratio * (x[1,t] - min_y)
+                
+                
+                #constraints += [x[1,t] <= min_y - threshold]
+                #constraints += [x[1,t] >= max_y + threshold]
+                #if xbar[1,t] >= min_y - threshold and xbar[1,t] <= max_y + threshold:
+                #    cost += []
+        if xbar[1,t] >= min_y - threshold and xbar[1,t] <= max_y + threshold:            
+                #constraints += [x[0,t] <= min_x - threshold]
+                #constraints += [x[0,t] >= max_x + threshold]            
+                #if xbar[0,t] >= min_x and xbar[0,t] <= max_x:
+                #ALS links van object
+            if xbar[0,3] < min_x - threshold:
+                print("Inbetween both y, left of min_x")
+                cost += ratio * (x[0,t] - min_x)
+            if xbar[0,3] > max_x + threshold:
+                print("Inbetween both y, right of max_x")
+                cost += ratio * (max_x - x[0,t])
+    
+    '''
+    #NOG VERANDEREN
         threshold = 0.01
         for t in range(8,T):
             if xbar[0,t] >= min_x - threshold and xbar[0,t] <= max_x + threshold:
@@ -322,7 +358,8 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
                 constraints += [x[1,t] >= max_y + threshold]
             if xbar[1,t] >= min_y - threshold and xbar[1,t] <= max_y + threshold:            
                 constraints += [x[0,t] <= min_x - threshold]
-                constraints += [x[0,t] >= max_x + threshold]            
+                constraints += [x[0,t] >= max_x + threshold]                   
+    '''
     
     '''
         for i in range(T): #Constrain voor stap 
@@ -337,18 +374,20 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
                 if max_x > xbar[0,i]:#Als obstakel rechts vd auto ligt:
                     constraints += [x[0,i] <= max_x - threshold]
     '''
+    
+    
     #Solve that bitch
     prob = cvxpy.Problem(cvxpy.Minimize(cost), constraints)
-    prob.solve(solver=cvxpy.ECOS, verbose=False)
+    prob.solve(solver=cvxpy.ECOS, verbose=False) #verbose = show output
     
 
     if prob.status == cvxpy.OPTIMAL or prob.status == cvxpy.OPTIMAL_INACCURATE:
-        ox = get_nparray_from_matrix(x.value[0, :])
-        oy = get_nparray_from_matrix(x.value[1, :])
-        ov = get_nparray_from_matrix(x.value[2, :])
-        oyaw = get_nparray_from_matrix(x.value[3, :])
-        oa = get_nparray_from_matrix(u.value[0, :])
-        odelta = get_nparray_from_matrix(u.value[1, :])
+       ox = get_nparray_from_matrix(x.value[0, :])
+       oy = get_nparray_from_matrix(x.value[1, :])
+       ov = get_nparray_from_matrix(x.value[2, :])
+       oyaw = get_nparray_from_matrix(x.value[3, :])
+       oa = get_nparray_from_matrix(u.value[0, :])
+       odelta = get_nparray_from_matrix(u.value[1, :])
 
     else:
         print("Error: Cannot solve mpc..")
@@ -690,6 +729,7 @@ def main():
         plt.axis("equal")
         plt.xlabel("x[m]")
         plt.ylabel("y[m]")
+        plt.gca().invert_yaxis()
         plt.legend()
 
         plt.subplots()
