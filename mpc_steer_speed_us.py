@@ -279,20 +279,20 @@ def linear_mpc_control(xref, xbar, x0, dref, configuration_space):
 
         A, B, C = get_linear_model_matrix(
             xbar[2, t], xbar[3, t], dref[0, t])
-        constraints += [x[:, t + 1] == A * x[:, t] + B * u[:, t] + C]
+        constraints += [x[:, t + 1] == A * x[:, t] + B * u[:, t] + C] # Respect the system dynamics
 
         if t < (T - 1):
             cost += cvxpy.quad_form(u[:, t + 1] - u[:, t], Rd)
             constraints += [cvxpy.abs(u[1, t + 1] - u[1, t]) <=
-                            MAX_DSTEER * DT]
+                            MAX_DSTEER * DT] # Respect the steering velocity constraint
 
     cost += cvxpy.quad_form(xref[:, T] - x[:, T], Qf)
     
     constraints += [x[:, 0] == x0]
-    constraints += [x[2, :] <= MAX_SPEED]
-    constraints += [x[2, :] >= MIN_SPEED]
-    constraints += [cvxpy.abs(u[0, :]) <= MAX_ACCEL]
-    constraints += [cvxpy.abs(u[1, :]) <= MAX_STEER]
+    constraints += [x[2, :] <= MAX_SPEED] # Respect the max longidudinal velocity constraint
+    constraints += [x[2, :] >= MIN_SPEED] # Respect the min longidudinal velocity constraint
+    constraints += [cvxpy.abs(u[0, :]) <= MAX_ACCEL] # Respect the max longidudinal acceleration constraint, positive and negative
+    constraints += [cvxpy.abs(u[1, :]) <= MAX_STEER] # Respect the max steering angle constraint, positive and negative
 
 
     prob = cvxpy.Problem(cvxpy.Minimize(cost), constraints)
