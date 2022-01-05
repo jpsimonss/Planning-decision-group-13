@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
         "./CubicSpline"
-    ]
+    ],
+    "python.pythonPath": "C:\\ProgramData\\Anaconda3\\python.exe"
 }
