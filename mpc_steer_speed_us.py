@@ -10,6 +10,7 @@ import cvxpy
 import math
 import numpy as np
 import sys
+from numpy.core.numeric import ones_like
 from numpy.lib.function_base import diff
 from numpy.ma.core import subtract
 import shapely.geometry as geom
@@ -46,15 +47,17 @@ N_IND_SEARCH = 10  # Search index number
 
 DT = 0.2  # [s] time tick
 
+
 scaling_car = 1
 # Vehicle parameters
-LENGTH = scaling_car * 3.0  # [m]
-WIDTH = scaling_car * 2.0  # [m]
-BACKTOWHEEL = scaling_car * 0.5  # [m]
-WHEEL_LEN = scaling_car * 0.3  # [m]
-WHEEL_WIDTH = scaling_car * 0.2  # [m]
-TREAD = scaling_car * 0.7  # [m]
-WB = scaling_car * 2.0  # [m]
+# Each cell is 1/4 meter
+LENGTH = scaling_car * 3.0  # [cells]
+WIDTH = scaling_car * 2.0  # [cells]
+BACKTOWHEEL = scaling_car * 0.5  # [cells]
+WHEEL_LEN = scaling_car * 0.3  # [cells]
+WHEEL_WIDTH = scaling_car * 0.2  # [cells]
+TREAD = scaling_car * 0.7  # [cells]
+WB = scaling_car * 2.0  # [cells]
 
 MAX_STEER = np.deg2rad(45.0)  # maximum steering angle [rad]
 MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
@@ -537,6 +540,7 @@ def spline_track_diff(x, y, x_point, y_point):
     diff = point.distance(line)/scaling
     
     
+    
     return diff
 
 def find_all_diff(x, y, x_point, y_point):
@@ -576,7 +580,7 @@ def main():
 
 
     differences = find_all_diff(x, y, ax, ay)
-  
+    acceptable_difference = ones_like(differences) * (2.5/scaling - 0.25 ) #minimal distance between planned path and obstacle
     print("max difference", np.max(differences))
 
 
@@ -599,6 +603,9 @@ def main():
 
         plt.subplots()
         plt.plot(differences, label="difference")
+        plt.plot(acceptable_difference, label="max acceptable difference")
+        plt.legend()
+        plt.plot()
         plt.grid(True)
         plt.xlabel("Spline path point")
         plt.ylabel("shortest distance to path in meters")
