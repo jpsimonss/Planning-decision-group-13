@@ -25,6 +25,7 @@ NX = 4  # x = x, y, v, yaw
 NU = 2  # a = [accel, steer]
 T = 12  # horizon length
 
+
 # mpc parameters
 R = np.diag([0.01, 0.01])  # input cost matrix
 Rd = np.diag([0.01, 5.0])  # input difference cost matrix
@@ -42,7 +43,6 @@ TARGET_SPEED = scaling * 10.0 / 3.6  # [m/s] target speed
 N_IND_SEARCH = 10  # Search index number
 
 DT = 0.2  # [s] time tick
-
 
 scaling_car = 1
 # Vehicle parameters
@@ -311,6 +311,7 @@ def linear_mpc_control(xref, xbar, x0, dref,array, obstacles):
     if max_x != 0: #If an obstacle is detected:
         min_x = np.amin(minus_x[np.nonzero(minus_x)])
         min_y = np.amin(minus_y[np.nonzero(minus_y)])
+        print(f'Own location = (x,y) = {np.round(xbar[0,0]), np.round(xbar[1,0])}')
         print(min_x, max_x, min_y, max_y)
 
         for i in range(T): #Constrain voor stap 
