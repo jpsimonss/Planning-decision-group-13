@@ -119,8 +119,8 @@ def random_start_end(obstacle_grid, directions):
             elif i == 1:
                 end = [randomRow[0], randomColumn[0]]
                 i = i+1
-    start = [38, 31]
-    end = [173, 122]
+    # start = [176, 40]
+    # end = [44, 160]
     return start, end
 
 # def get_obstacle_gradient(obstacle_grid, directions, size=1, value_increase=1):

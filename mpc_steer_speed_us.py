@@ -31,16 +31,16 @@ T = 12  # horizon length
 
 # mpc parameters
 R = np.diag([0.01, 0.01])  # input cost matrix
-Rd = np.diag([0.01, 5.0])  # input difference cost matrix
-Q = np.diag([1.0, 1.0, 0.5, 0.5])  # state cost matrix
+Rd = np.diag([0.01, 5])  # input difference cost matrix
+Q = np.diag([1.0, 1.0, .5, .5])  # state cost matrix
 Qf = Q  # state final matrix
 GOAL_DIS = scaling * 0.3 # goal distance
 STOP_SPEED = scaling * 0.1 / 3.6  # stop speed
 MAX_TIME = 500.0  # max simulation time
 
 # iterative paramter
-MAX_ITER = 3  # Max iteration
-DU_TH = 0.1  # iteration finish param
+MAX_ITER = 20  # Max iteration
+DU_TH = 1  # iteration finish param
 
 TARGET_SPEED = scaling * 10.0 / 3.6  # [m/s] target speed
 N_IND_SEARCH = 10  # Search index number
@@ -63,9 +63,9 @@ MAX_STEER = np.deg2rad(45.0)  # maximum steering angle [rad]
 MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
 MAX_SPEED = scaling * 5.0 / 3.6  # maximum speed [m/s]
 MIN_SPEED = scaling * -2.0 / 3.6  # minimum speed [m/s]
-MAX_ACCEL = scaling * 1.5  # maximum accel [m/ss]
+MAX_ACCEL = scaling * 2  # maximum accel [m/ss]
 
-show_animation = False 
+show_animation = True 
 
 
 class State:
@@ -253,8 +253,9 @@ def iterative_linear_mpc_control(xref, x0, dref, oa, od, configuration_space):
         du = sum(abs(oa - poa)) + sum(abs(od - pod))  # calc u change value
         if du <= DU_TH:
             break
-    # else:
-    #     print("Iterative is max iter")
+        # else:
+        #     print(du)
+        #     print("Iterative is max iter")
 
     return oa, od, ox, oy, oyaw, ov
 
