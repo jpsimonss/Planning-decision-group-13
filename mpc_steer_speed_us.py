@@ -63,7 +63,7 @@ MAX_STEER = np.deg2rad(45.0)  # maximum steering angle [rad]
 MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
 MAX_SPEED = scaling * 5.0 / 3.6  # maximum speed [m/s]
 MIN_SPEED = scaling * -2.0 / 3.6  # minimum speed [m/s]
-MAX_ACCEL = scaling * 1.0  # maximum accel [m/ss]
+MAX_ACCEL = scaling * 1.5  # maximum accel [m/ss]
 
 show_animation = True 
 

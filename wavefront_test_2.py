@@ -11,12 +11,12 @@ def simple_obstacle_grid(GRIDSIZE=0, threshold=0):
 def get_obstacle_grid(GRIDSIZE=3, threshold=.01):
     # Open image and convert to numpy array
         ### SELECT ONE ###
-    # image = Image.open('supermarkets/supermarket3.jpeg')             # Real supermarket
+    image = Image.open('supermarkets/supermarket3.jpeg')             # Real supermarket
     # image = Image.open('supermarkets/straight.jpg')     # Test with straight shelves
     # image = Image.open('supermarkets/rotated.jpg')      # Test with rotated shelves
     # image = Image.open('supermarkets/circles.jpg')      # Test with oval shapes
     # image = Image.open('supermarkets/convex.jpg')      # Test with convex star shapes
-    image = Image.open('supermarkets/maze_v2.jpg')      # Test with maze
+    # image = Image.open('supermarkets/maze_v2.jpg')      # Test with maze
 
     image = image.convert("1")
     image_array = np.asarray(image)
@@ -116,6 +116,8 @@ def random_start_end(configuration_space):
             elif i == 1:
                 end = [randomRow[0], randomColumn[0]]
                 i = i+1
+    start = [38, 31]
+    end = [173, 122]
     return start, end
 
 # def get_obstacle_gradient(obstacle_grid, directions, size=1, value_increase=1):
