@@ -5,7 +5,7 @@ from mpc_steer_speed_us import multiple_max_diff
 
 def main():
     
-    iterations = 100
+    iterations = 17
     max_dif_normal = np.zeros(iterations)
     
     for i in range(iterations):
