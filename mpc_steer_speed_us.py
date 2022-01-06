@@ -439,7 +439,8 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state, array, fig, ax1, ax2,
         if check_goal(state, goal, target_ind, len(cx)):
             print("Goal")
             break
-
+        
+        
         if show_animation:  # pragma: no cover
             # for stopping simulation with the esc key.
             plt.gcf().canvas.mpl_connect('key_release_event',
@@ -593,15 +594,15 @@ def main():
         plt.plot(x, y, "-g", label="tracking")
         plt.grid(True)
         plt.axis("equal")
-        plt.xlabel("x[m]")
-        plt.ylabel("y[m]")
+        plt.xlabel("x")
+        plt.ylabel("y")
         plt.legend()
 
-        plt.subplots()
-        plt.plot(t, v, "-r", label="speed")
-        plt.grid(True)
-        plt.xlabel("Time [s]")
-        plt.ylabel("Speed [kmh]")
+        # plt.subplots()
+        # plt.plot(t, v, "-r", label="speed")
+        # plt.grid(True)
+        # plt.xlabel("Time [s]")
+        # plt.ylabel("Speed [kmh]")
 
         plt.subplots()
         plt.plot(differences, label="difference")
