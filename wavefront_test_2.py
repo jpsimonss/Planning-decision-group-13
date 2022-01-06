@@ -11,12 +11,12 @@ def simple_obstacle_grid(GRIDSIZE=0, threshold=0):
 def get_obstacle_grid(GRIDSIZE=3, threshold=.01):
     # Open image and convert to numpy array
         ### SELECT ONE ###
-    # image = Image.open('supermarkets/supermarket3.jpeg')             # Real supermarket
+    image = Image.open('supermarkets/supermarket3.jpeg')             # Real supermarket
     # image = Image.open('supermarkets/straight.jpg')     # Test with straight shelves
     # image = Image.open('supermarkets/rotated.jpg')      # Test with rotated shelves
     # image = Image.open('supermarkets/circles.jpg')      # Test with oval shapes
     # image = Image.open('supermarkets/convex.jpg')      # Test with convex star shapes
-    image = Image.open('supermarkets/maze_v3.jpg')      # Test with maze
+    # image = Image.open('supermarkets/maze_v3.jpg')      # Test with maze
 
     image = image.convert("1")
     image_array = np.asarray(image)
@@ -106,7 +106,7 @@ def make_configuration_space(obstacle_grid, directions, size=1):
 
 def random_start_end(obstacle_grid, directions):
 
-    configuration_space = make_configuration_space(obstacle_grid, directions, size=4)
+    configuration_space = make_configuration_space(obstacle_grid, directions, size=2)
 
     i = 0
     while i < 2:
